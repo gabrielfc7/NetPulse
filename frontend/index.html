@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetPulse Pro - WiFi & Network Diagnostic Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ECFEFF',
+              500: '#06B6D4',
+              600: '#0891B2',
+            },
+            dark: {
+              800: '#111827',
+              900: '#0B0F19',
+              950: '#05070B',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-dark-900 text-slate-100 min-h-screen flex flex-col lg:flex-row selection:bg-cyan-500 selection:text-white antialiased">
+
+  <!-- MOBILE SIDEBAR BACKDROP OVERLAY -->
+  <div id="sidebar-backdrop" onclick="toggleSidebar(false)" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden hidden transition-opacity"></div>
+
+  <!-- MODERN CATEGORIZED SIDEBAR NAVIGATION -->
+  <aside id="app-sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-slate-950/95 border-r border-slate-800/80 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shrink-0 overflow-y-auto">
+    
+    <!-- Top Branding & Sentry Badge -->
+    <div class="p-5 border-b border-slate-800/80">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">
+            <i data-lucide="wifi" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+                NetPulse <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 font-bold border border-cyan-500/30">PRO</span>
+              </h1>
+            </div>
+            <span id="admin-badge" class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-slate-900 text-slate-400 border border-slate-800">
+              Checking Privileges...
+            </span>
+          </div>
+        </div>
+        <!-- Close button on mobile -->
+        <button onclick="toggleSidebar(false)" class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Quick 24/7 Sentry Status Bar -->
+      <div class="mt-4 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/90 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="font-medium text-slate-300 text-[11px]">24/7 Drop Sentry</span>
+        </div>
+        <span class="text-[10px] font-mono text-emerald-400 font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">ARMED</span>
+      </div>
+    </div>
+
+    <!-- Categorized Navigation Links (No Horizontal Sliding Bar) -->
+    <nav class="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+      
+      <!-- Group 1: MONITOR & HEALTH -->
+      <div class="space-y-1">
+        <span class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Monitoring & Health</span>
+        
+        <button class="nav-tab active w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-overview">
+          <i data-lucide="activity" class="w-4 h-4 text-cyan-400 shrink-0"></i>
+          <span>Overview & Health</span>
+        </button>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-timeline">
+          <i data-lucide="history" class="w-4 h-4 text-cyan-400 shrink-0"></i>
+          <span>24/7 Outage Timeline</span>
+        </button>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-alerts">
+          <i data-lucide="bell" class="w-4 h-4 text-amber-400 shrink-0"></i>
+          <span>Alerts & Phone Push</span>
+        </button>
+      </div>
+
+      <!-- Group 2: DIAGNOSTICS & DOCTOR -->
+      <div class="space-y-1">
+        <span class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Diagnostics & Analysis</span>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-drops">
+          <i data-lucide="stethoscope" class="w-4 h-4 text-rose-400 shrink-0"></i>
+          <span>Drop & Disconnect Doctor</span>
+        </button>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-spectrum">
+          <i data-lucide="radio-tower" class="w-4 h-4 text-blue-400 shrink-0"></i>
+          <span>Wi-Fi Spectrum Radar</span>
+        </button>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-ping">
+          <i data-lucide="target" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <span>Latency & Loss Scope</span>
+        </button>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-bufferbloat">
+          <i data-lucide="gauge" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+          <span>Bufferbloat & Speed</span>
+        </button>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-processes">
+          <i data-lucide="cpu" class="w-4 h-4 text-teal-400 shrink-0"></i>
+          <span>Bandwidth Hogs</span>
+        </button>
+      </div>
+
+      <!-- Group 3: SECURITY & AUDIT (NEW!) -->
+      <div class="space-y-1">
+        <span class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Security & Defense</span>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-security">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <span class="flex-1">Security & Vulnerabilities</span>
+          <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">NEW</span>
+        </button>
+      </div>
+
+      <!-- Group 4: TOOLS & REPAIR -->
+      <div class="space-y-1">
+        <span class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Optimization & Repair</span>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-dns">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-400 shrink-0"></i>
+          <span>DNS Turbo Benchmark</span>
+        </button>
+
+        <button class="nav-tab w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-left" data-tab="tab-repair">
+          <i data-lucide="wrench" class="w-4 h-4 text-cyan-400 shrink-0"></i>
+          <span>Local Repair Center</span>
+        </button>
+      </div>
+
+    </nav>
+
+    <!-- Sidebar Footer: Buy Me a Coffee + Host Platform Info -->
+    <div class="p-4 border-t border-slate-800/80 space-y-3">
+      <!-- Buy Me A Coffee Support Button -->
+      <a href="https://buymeacoffee.com/gabrielcacao" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 hover:text-amber-200 text-xs font-bold transition active:scale-95 shadow-sm">
+        <span class="text-sm">☕</span>
+        <span>Buy Me a Coffee</span>
+      </a>
+
+      <!-- Host Hardware / Platform Info -->
+      <div class="text-[11px] text-slate-500 flex items-center justify-between">
+        <span id="hw-model-name" class="truncate max-w-[140px]">Host Appliance</span>
+        <span id="hw-temp-badge" class="font-mono text-slate-400 hidden">--°C</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN VIEWPORT WRAPPER -->
+  <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+    
+    <!-- TOP NAVBAR -->
+    <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-30 px-4 lg:px-8 py-3">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        
+        <!-- Mobile Hamburger Toggle + Active Tab Title -->
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSidebar(true)" class="lg:hidden p-2 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div class="hidden sm:block">
+            <h2 id="top-view-title" class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i> Overview & Health
+            </h2>
+          </div>
+        </div>
+
+        <!-- Live Connection Telemetry Pill & Realtime Bandwidth -->
+        <div class="flex items-center gap-2">
+          <!-- Real-Time Bandwidth Pill -->
+          <div id="realtime-bandwidth-pill" class="hidden md:flex items-center gap-3 bg-slate-900/90 border border-cyan-500/30 px-3 py-1.5 rounded-xl text-xs font-mono shadow-sm">
+            <span class="flex items-center gap-1 text-cyan-400" title="Real-time Download Speed">
+              <i data-lucide="arrow-down" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span id="rt-dl-speed" class="font-bold">0.00</span> <span class="text-[10px] text-slate-400">Mbps</span>
+            </span>
+            <span class="text-slate-600">|</span>
+            <span class="flex items-center gap-1 text-emerald-400" title="Real-time Upload Speed">
+              <i data-lucide="arrow-up" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span id="rt-ul-speed" class="font-bold">0.00</span> <span class="text-[10px] text-slate-400">Mbps</span>
+            </span>
+          </div>
+
+          <!-- Wi-Fi Connection Pill -->
+          <div id="live-connection-pill" class="flex items-center gap-3 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="header-ssid" class="font-semibold text-slate-200 truncate max-w-[120px] sm:max-w-none">Scanning Wi-Fi...</span>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 text-slate-400 border-l border-slate-800 pl-2 font-mono text-[11px]">
+              <span id="header-band">-- GHz</span>
+              <span>•</span>
+              <span id="header-speed" class="text-cyan-400">-- Mbps</span>
+              <span>•</span>
+              <span id="header-rssi" class="text-amber-400">-- dBm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions: Auto-Fix All & Refresh -->
+        <div class="flex items-center gap-2">
+          <button id="btn-master-repair" onclick="triggerFullRepair()" class="flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-cyan-500/20 transition active:scale-95 whitespace-nowrap">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Smart Auto-Fix All</span>
+            <span class="sm:hidden">Auto-Fix</span>
+          </button>
+          <button onclick="refreshAll()" title="Refresh Diagnostics" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- MAIN VIEWPORT -->
+    <main class="flex-1 w-full p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: OVERVIEW & HEALTH                   -->
+    <!-- ========================================== -->
+    <div id="tab-overview" class="tab-content space-y-6">
+      
+      <!-- Live Drop Alert & Immediate Fix Banner -->
+      <div id="live-drop-alert-banner" class="hidden p-4 rounded-2xl bg-rose-950/40 border border-rose-500/50 shadow-2xl space-y-3">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30 animate-pulse">
+              <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">Drop Detected</span>
+                <h4 id="banner-drop-cause" class="text-sm font-bold text-white">ISP / External WAN Drop</h4>
+              </div>
+              <p id="banner-drop-details" class="text-xs text-rose-200/90 mt-0.5">Local Wi-Fi is healthy. Upstream Internet route failed.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="banner-drop-action-btn" onclick="runBannerFixAction(this)" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 transition active:scale-95 flex items-center gap-1.5 whitespace-nowrap">
+              <i data-lucide="wrench" class="w-3.5 h-3.5"></i> <span id="banner-drop-btn-text">Apply Fix Now</span>
+            </button>
+            <button onclick="dismissDropBanner()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Dismiss">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-rose-500/20 text-xs text-slate-300 flex items-start gap-2">
+          <i data-lucide="lightbulb" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+          <div>
+            <strong class="text-white">Immediate Fix Steps:</strong>
+            <span id="banner-drop-advice" class="text-slate-300 ml-1">Checking fix instructions...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Health Assessment Banner -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Score Card -->
+        <div class="glass-panel p-6 flex flex-col justify-between relative overflow-hidden">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Connection Health Score</span>
+              <h2 id="health-grade-text" class="text-2xl font-bold text-white mt-1">Analyzing...</h2>
+            </div>
+            <div id="health-badge" class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black text-white bg-slate-800 border border-slate-700 shadow-xl">
+              --
+            </div>
+          </div>
+          <div class="mt-6 space-y-2">
+            <div class="flex justify-between text-xs text-slate-400">
+              <span>Overall Link Quality</span>
+              <span id="health-score-percent">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+              <div id="health-progress-bar" class="h-3 rounded-full bg-cyan-500 transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+          <p id="health-summary-desc" class="text-xs text-slate-400 mt-4">
+            Evaluating signal strength, gateway response time, packet loss, and driver stability...
+          </p>
+        </div>
+
+        <!-- Telemetry Details Card -->
+        <div class="glass-panel p-6 lg:col-span-2 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i data-lucide="radio" class="w-4 h-4 text-cyan-400"></i> Active Wireless Hardware & Link
+            </h3>
+            <span id="adapter-chip-name" class="text-xs font-mono text-slate-400 truncate max-w-xs">Wireless Adapter</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800">
+              <span class="text-xs text-slate-400">Signal Strength</span>
+              <div class="flex items-center gap-2 mt-1">
+                <span id="ov-signal-percent" class="text-xl font-bold text-white">--%</span>
+                <span id="ov-rssi-dbm" class="text-xs font-mono text-slate-400">-- dBm</span>
+              </div>
+              <span id="ov-signal-rating" class="text-xs font-medium text-emerald-400">--</span>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800">
+              <span class="text-xs text-slate-400">Physical Link Speed</span>
+              <div class="flex items-center gap-2 mt-1">
+                <span id="ov-link-speed" class="text-xl font-bold text-cyan-400">--</span>
+                <span class="text-xs text-slate-400">Mbps</span>
+              </div>
+              <span id="ov-radio-type" class="text-xs font-medium text-slate-400">802.11ax</span>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800">
+              <span class="text-xs text-slate-400">Band & Channel</span>
+              <div class="flex items-center gap-2 mt-1">
+                <span id="ov-band-channel" class="text-xl font-bold text-white">--</span>
+              </div>
+              <span id="ov-channel-status" class="text-xs font-medium text-emerald-400">Optimal</span>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-800/40 border border-slate-800">
+              <span class="text-xs text-slate-400">Router Gateway</span>
+              <div class="flex items-center gap-2 mt-1">
+                <span id="ov-gateway-ip" class="text-sm font-bold font-mono text-white truncate">192.168.1.1</span>
+              </div>
+              <a id="btn-open-router-settings" href="#" target="_blank" class="text-xs text-cyan-400 hover:underline flex items-center gap-1 mt-1">
+                Open Admin <i data-lucide="external-link" class="w-3 h-3"></i>
+              </a>
+            </div>
+          </div>
+
+          <!-- Real-Time Bandwidth Engine Row -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-800/80">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-[11px] text-slate-400 flex items-center gap-1"><i data-lucide="arrow-down" class="w-3 h-3 text-cyan-400"></i> Real-time Download</span>
+              <div class="flex items-baseline gap-1.5 mt-1">
+                <span id="ov-rt-dl-mbps" class="text-xl font-bold font-mono text-cyan-400">0.00</span>
+                <span class="text-[10px] text-slate-400">Mbps</span>
+              </div>
+              <span id="ov-rt-dl-kbps" class="text-[10px] font-mono text-slate-500">0 kbps</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-[11px] text-slate-400 flex items-center gap-1"><i data-lucide="arrow-up" class="w-3 h-3 text-emerald-400"></i> Real-time Upload</span>
+              <div class="flex items-baseline gap-1.5 mt-1">
+                <span id="ov-rt-ul-mbps" class="text-xl font-bold font-mono text-emerald-400">0.00</span>
+                <span class="text-[10px] text-slate-400">Mbps</span>
+              </div>
+              <span id="ov-rt-ul-kbps" class="text-[10px] font-mono text-slate-500">0 kbps</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-[11px] text-slate-400">Total I/O Traffic</span>
+              <div class="flex items-baseline gap-1.5 mt-1">
+                <span id="ov-rt-total-mb" class="text-xl font-bold font-mono text-white">--</span>
+                <span class="text-[10px] text-slate-400">MB</span>
+              </div>
+              <span id="ov-rt-interface-name" class="text-[10px] font-mono text-slate-500 truncate block">Wi-Fi</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <span class="text-[11px] text-slate-400">Packets Handled</span>
+              <div class="flex items-baseline gap-1.5 mt-1">
+                <span id="ov-rt-packets" class="text-xl font-bold font-mono text-slate-200">--</span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-500">Active Link</span>
+            </div>
+          </div>
+
+          <!-- Root Cause Isolation Verdict Box -->
+          <div id="ov-verdict-box" class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex items-start gap-3">
+            <div id="ov-verdict-icon" class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 mt-0.5">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <div class="space-y-1">
+              <h4 id="ov-verdict-title" class="text-sm font-semibold text-white">Diagnosing Network Link...</h4>
+              <p id="ov-verdict-desc" class="text-xs text-slate-300 leading-relaxed">
+                Measuring hop latency between your computer, your Wi-Fi router, and the public internet.
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ========================================== -->
+      <!-- SPEEDS OVER TIME (REAL-TIME THROUGHPUT SCOPE) -->
+      <!-- ========================================== -->
+      <div class="glass-panel p-6 space-y-4 border-cyan-500/30 relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="gauge" class="w-4 h-4 text-cyan-400"></i> Live Throughput Scope & Speeds Over Time
+              </h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">High-precision continuous I/O throughput stream updated every 1.5 seconds</p>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-mono">
+            <div class="flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
+              <span class="text-slate-400">Peak DL:</span>
+              <span id="ov-peak-dl-mbps" class="font-bold text-cyan-400">0.00 Mbps</span>
+            </div>
+            <div class="flex items-center gap-1.5 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
+              <span class="text-slate-400">Peak UL:</span>
+              <span id="ov-peak-ul-mbps" class="font-bold text-emerald-400">0.00 Mbps</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Speeds Over Time Canvas -->
+        <div class="h-64 relative">
+          <canvas id="chart-speed-live"></canvas>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80 text-xs text-slate-400">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-cyan-400/30 border border-cyan-400 inline-block"></span> Download Throughput</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-400/30 border border-emerald-400 inline-block"></span> Upload Throughput</span>
+          </div>
+          <span class="text-slate-500 font-mono">Sampling Window: 60 Seconds Active Rolling Buffer</span>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- NETWORK QUALITY MULTI-METRIC MATRIX & RADAR -->
+      <!-- ========================================== -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- 5 Pillars Quality Breakdown -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i> 5 Pillars of Network Health
+            </h4>
+            <span class="text-xs text-slate-400">Weighted Quality Index</span>
+          </div>
+
+          <div class="space-y-3.5 text-xs">
+            <!-- 1. Physical Wireless Link -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-300 font-medium">1. Physical Wireless Link Quality</span>
+                <span id="pillar-sig-val" class="font-bold text-emerald-400 font-mono">100 / 100</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="pillar-sig-bar" class="bg-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 100%"></div>
+              </div>
+            </div>
+
+            <!-- 2. Router Hop Latency -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-300 font-medium">2. Local Gateway Response (< 2ms)</span>
+                <span id="pillar-gw-val" class="font-bold text-emerald-400 font-mono">98 / 100</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="pillar-gw-bar" class="bg-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 98%"></div>
+              </div>
+            </div>
+
+            <!-- 3. Internet Hop Latency -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-300 font-medium">3. Public Internet Edge Routing</span>
+                <span id="pillar-net-val" class="font-bold text-cyan-400 font-mono">95 / 100</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="pillar-net-bar" class="bg-cyan-400 h-2 rounded-full transition-all duration-500" style="width: 95%"></div>
+              </div>
+            </div>
+
+            <!-- 4. Jitter Buffer Stability -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-300 font-medium">4. Jitter Buffer & Micro-Spike Health</span>
+                <span id="pillar-jit-val" class="font-bold text-emerald-400 font-mono">99 / 100</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="pillar-jit-bar" class="bg-emerald-400 h-2 rounded-full transition-all duration-500" style="width: 99%"></div>
+              </div>
+            </div>
+
+            <!-- 5. DNS Name Resolution -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-300 font-medium">5. DNS Lookup Speed (< 30ms)</span>
+                <span id="pillar-dns-val" class="font-bold text-cyan-400 font-mono">94 / 100</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="pillar-dns-bar" class="bg-cyan-400 h-2 rounded-full transition-all duration-500" style="width: 94%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-World Experience Readiness Badges -->
+        <div class="glass-panel p-6 space-y-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i> Real-World Experience Readiness
+            </h4>
+            <span class="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">All Systems Optimal</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white flex items-center gap-1.5"><i data-lucide="gamepad-2" class="w-3.5 h-3.5 text-cyan-400"></i> Esports Gaming</span>
+                <span id="readiness-gaming-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">100%</span>
+              </div>
+              <p id="readiness-gaming-desc" class="text-[11px] text-slate-400">Sub-millisecond router ping, zero packet loss.</p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white flex items-center gap-1.5"><i data-lucide="video" class="w-3.5 h-3.5 text-emerald-400"></i> Video Calling</span>
+                <span id="readiness-calls-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">100%</span>
+              </div>
+              <p id="readiness-calls-desc" class="text-[11px] text-slate-400">Jitter &lt; 1ms, crystal-clear audio/video stream.</p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white flex items-center gap-1.5"><i data-lucide="tv" class="w-3.5 h-3.5 text-blue-400"></i> 4K UHD Streaming</span>
+                <span id="readiness-stream-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">100%</span>
+              </div>
+              <p id="readiness-stream-desc" class="text-[11px] text-slate-400">Unthrottled link rate, smooth continuous buffer.</p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white flex items-center gap-1.5"><i data-lucide="globe" class="w-3.5 h-3.5 text-amber-400"></i> Web Browsing</span>
+                <span id="readiness-web-badge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">96%</span>
+              </div>
+              <p id="readiness-web-desc" class="text-[11px] text-slate-400">Domain queries resolving in &lt; 25 milliseconds.</p>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-cyan-950/20 border border-cyan-500/30 flex items-center justify-between text-xs text-slate-300">
+            <span class="flex items-center gap-2">
+              <i data-lucide="radio" class="w-4 h-4 text-cyan-400"></i>
+              <span>Channel Contention: <strong class="text-white">0 Neighbor Networks on Ch 36</strong></span>
+            </span>
+            <a href="#" onclick="document.querySelector('[data-tab=\'tab-spectrum\']').click(); return false;" class="text-cyan-400 hover:underline font-semibold flex items-center gap-1">
+              View Radar <i data-lucide="chevron-right" class="w-3 h-3"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Action Cards -->
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">Instant Local Network Actions</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <div class="glass-card-interactive p-4 flex flex-col justify-between">
+            <div>
+              <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-3">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              </div>
+              <h4 class="text-sm font-bold text-white">Flush DNS Cache</h4>
+              <p class="text-xs text-slate-400 mt-1">Clears corrupt name resolution records causing website timeouts.</p>
+            </div>
+            <button onclick="runSingleAction('flush_dns', this)" class="mt-4 w-full py-2 bg-slate-800 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Flush DNS
+            </button>
+          </div>
+
+          <div class="glass-card-interactive p-4 flex flex-col justify-between">
+            <div>
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
+                <i data-lucide="battery-charging" class="w-4 h-4"></i>
+              </div>
+              <h4 class="text-sm font-bold text-white">Fix Power Sleep Drops</h4>
+              <p class="text-xs text-slate-400 mt-1">Stops Windows from turning off Wi-Fi card power during idle.</p>
+            </div>
+            <button onclick="runSingleAction('fix_power_save', this)" class="mt-4 w-full py-2 bg-slate-800 hover:bg-emerald-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Disable Sleep Throttling
+            </button>
+          </div>
+
+          <div class="glass-card-interactive p-4 flex flex-col justify-between">
+            <div>
+              <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center mb-3">
+                <i data-lucide="sliders" class="w-4 h-4"></i>
+              </div>
+              <h4 class="text-sm font-bold text-white">Tune TCP Auto-Tuning</h4>
+              <p class="text-xs text-slate-400 mt-1">Enables RFC timestamps, RSS multicore, and unthrottled TCP window.</p>
+            </div>
+            <button onclick="runSingleAction('tune_tcp', this)" class="mt-4 w-full py-2 bg-slate-800 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Tune TCP Stack
+            </button>
+          </div>
+
+          <div class="glass-card-interactive p-4 flex flex-col justify-between">
+            <div>
+              <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center mb-3">
+                <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+              </div>
+              <h4 class="text-sm font-bold text-white">Anti-Lag Gaming Tuning</h4>
+              <p class="text-xs text-slate-400 mt-1">Reduces Roaming Aggressiveness to stop Wi-Fi scanning ping spikes.</p>
+            </div>
+            <button onclick="runSingleAction('tune_adapter_gaming', this)" class="mt-4 w-full py-2 bg-slate-800 hover:bg-amber-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Apply Anti-Lag Tuning
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: WI-FI SPECTRUM & BUSY CHANNELS      -->
+    <!-- ========================================== -->
+    <div id="tab-spectrum" class="tab-content space-y-6 hidden">
+      
+      <!-- Spectrum Advisor Banner -->
+      <div class="glass-panel p-6 border-cyan-500/30">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs uppercase font-bold text-cyan-400 tracking-wider">Wi-Fi Channel Advisor</span>
+              <span id="spectrum-current-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                Channel 36 (5 GHz)
+              </span>
+            </div>
+            <p id="spectrum-advisor-text" class="text-sm text-slate-200 font-medium">
+              Scanning neighboring networks and calculating channel interference...
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="fetchWifiScan(true)" class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-xl transition">
+              <i data-lucide="scan" class="w-4 h-4"></i> Scan Spectrum Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spectrum Charts (2.4 GHz and 5 GHz) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- 5 GHz Chart -->
+        <div class="glass-panel p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="radio" class="w-4 h-4 text-cyan-400"></i> 5 GHz Spectrum Utilization
+              </h3>
+              <p class="text-xs text-slate-400">High bandwidth, low interference band (Channels 36-165)</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400">Recommended 5GHz:</span>
+              <span id="best-5g-channel" class="text-sm font-bold text-cyan-400 ml-1">Ch 36</span>
+            </div>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-spectrum-5g"></canvas>
+          </div>
+        </div>
+
+        <!-- 2.4 GHz Chart -->
+        <div class="glass-panel p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="radio" class="w-4 h-4 text-amber-400"></i> 2.4 GHz Channel Congestion
+              </h3>
+              <p class="text-xs text-slate-400">Long range, highly crowded band (Non-overlapping: 1, 6, 11)</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400">Cleanest 2.4GHz:</span>
+              <span id="best-24-channel" class="text-sm font-bold text-amber-400 ml-1">Ch 6</span>
+            </div>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-spectrum-24"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Neighboring Networks Table -->
+      <div class="glass-panel p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="list" class="w-4 h-4 text-slate-400"></i> Detected Surrounding Access Points
+          </h3>
+          <span id="total-bssids-count" class="text-xs text-slate-400 font-mono">0 Access Points Found</span>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-800/60 text-slate-400 border-b border-slate-700">
+              <tr>
+                <th class="p-3">SSID (Network Name)</th>
+                <th class="p-3">Band</th>
+                <th class="p-3">Channel</th>
+                <th class="p-3">Signal %</th>
+                <th class="p-3">RSSI</th>
+                <th class="p-3">Radio Standard</th>
+                <th class="p-3">Channel Utilization</th>
+                <th class="p-3">BSSID MAC</th>
+              </tr>
+            </thead>
+            <tbody id="nearby-networks-tbody" class="divide-y divide-slate-800">
+              <tr>
+                <td colspan="8" class="p-6 text-center text-slate-400">Scanning for surrounding wireless networks...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: LATENCY & LOSS SCOPE                -->
+    <!-- ========================================== -->
+    <div id="tab-ping" class="tab-content space-y-6 hidden">
+      
+      <!-- Dual-Hop Diagnostic Banner -->
+      <div id="ping-verdict-banner" class="glass-panel p-6 border-cyan-500/30">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Multi-Hop Bottleneck Diagnosis</span>
+            <h3 id="ping-verdict-title" class="text-xl font-bold text-white">Analyzing Local vs ISP Latency...</h3>
+            <p id="ping-verdict-detail" class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Pinging local gateway (router) and external edge servers to isolate where latency occurs.
+            </p>
+          </div>
+          <button onclick="runPingDiagnostic(true)" class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-xl transition">
+            <i data-lucide="play" class="w-4 h-4"></i> Run Diagnostic
+          </button>
+        </div>
+      </div>
+
+      <!-- Hop Metrics Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="glass-panel p-5 space-y-3 border-emerald-500/20">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Hop 1: Local Router</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">Wi-Fi Link</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="gw-avg-ms" class="text-3xl font-extrabold text-white">--</span>
+            <span class="text-xs text-slate-400">ms avg</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-800">
+            <div><span class="text-slate-500">Loss:</span> <span id="gw-loss-val" class="font-bold text-slate-200">0%</span></div>
+            <div><span class="text-slate-500">Jitter:</span> <span id="gw-jitter-val" class="font-bold text-slate-200">-- ms</span></div>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 space-y-3 border-cyan-500/20">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Hop 2: Cloudflare Edge</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-mono">1.1.1.1</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="cf-avg-ms" class="text-3xl font-extrabold text-white">--</span>
+            <span class="text-xs text-slate-400">ms avg</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-800">
+            <div><span class="text-slate-500">Loss:</span> <span id="cf-loss-val" class="font-bold text-slate-200">0%</span></div>
+            <div><span class="text-slate-500">Jitter:</span> <span id="cf-jitter-val" class="font-bold text-slate-200">-- ms</span></div>
+          </div>
+        </div>
+
+        <div class="glass-panel p-5 space-y-3 border-blue-500/20">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-semibold text-slate-400 uppercase">Hop 3: Google Anycast</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-mono">8.8.8.8</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="gg-avg-ms" class="text-3xl font-extrabold text-white">--</span>
+            <span class="text-xs text-slate-400">ms avg</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-800">
+            <div><span class="text-slate-500">Loss:</span> <span id="gg-loss-val" class="font-bold text-slate-200">0%</span></div>
+            <div><span class="text-slate-500">Jitter:</span> <span id="gg-jitter-val" class="font-bold text-slate-200">-- ms</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Real-time Latency Chart -->
+      <div class="glass-panel p-5 space-y-4">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="line-chart" class="w-4 h-4 text-cyan-400"></i> Hop-by-Hop Round Trip Comparison
+        </h3>
+        <div class="h-64 relative">
+          <canvas id="chart-ping-hops"></canvas>
+        </div>
+      </div>
+
+      <!-- MTU Discovery & Packet Fragmentation Card -->
+      <div class="glass-panel p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <h4 class="text-sm font-bold text-white">MTU Discovery & Packet Fragmentation</h4>
+            <span id="mtu-badge" class="px-2 py-0.5 rounded text-xs font-bold bg-slate-800 text-slate-300">Checking...</span>
+          </div>
+          <p id="mtu-desc" class="text-xs text-slate-400 max-w-2xl">
+            Detects if your connection fragments oversized packets, which causes packet loss and game stutter.
+          </p>
+        </div>
+        <button onclick="runMtuTest(this)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition">
+          Test MTU
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: DISCONNECT & DROP DOCTOR            -->
+    <!-- ========================================== -->
+    <div id="tab-drops" class="tab-content space-y-6 hidden">
+      
+      <!-- Doctor Summary Header -->
+      <div class="glass-panel p-6 border-rose-500/20">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="text-xs uppercase font-bold text-rose-400 tracking-wider">Windows Event Log Diagnostics</span>
+            <h3 class="text-xl font-bold text-white">Wi-Fi Disconnection & Drop Doctor</h3>
+            <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Analyzes historical events from Windows WLAN AutoConfig to diagnose the exact root causes of past disconnects and drops.
+            </p>
+          </div>
+          <button onclick="fetchDropsReport(true)" class="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Scan Event Logs
+          </button>
+        </div>
+      </div>
+
+      <!-- Drop Statistics Row -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="glass-panel p-4">
+          <span class="text-xs text-slate-400">Total Disconnects</span>
+          <div class="text-2xl font-bold text-white mt-1" id="stat-total-drops">0</div>
+          <span class="text-xs text-slate-500">Last 7 days</span>
+        </div>
+
+        <div class="glass-panel p-4 border-amber-500/30">
+          <span class="text-xs text-slate-400">Driver Sleep Drops</span>
+          <div class="text-2xl font-bold text-amber-400 mt-1" id="stat-driver-drops">0</div>
+          <span class="text-xs text-amber-400/80">Power management sleep</span>
+        </div>
+
+        <div class="glass-panel p-4 border-rose-500/30">
+          <span class="text-xs text-slate-400">Signal Fade Drops</span>
+          <div class="text-2xl font-bold text-rose-400 mt-1" id="stat-signal-drops">0</div>
+          <span class="text-xs text-rose-400/80">Out of range / interference</span>
+        </div>
+
+        <div class="glass-panel p-4">
+          <span class="text-xs text-slate-400">User Disconnects</span>
+          <div class="text-2xl font-bold text-slate-300 mt-1" id="stat-user-drops">0</div>
+          <span class="text-xs text-slate-500">Manual disconnects</span>
+        </div>
+      </div>
+
+      <!-- Actionable Doctor Recommendations -->
+      <div id="doctor-findings-card" class="glass-panel p-5 space-y-3">
+        <h4 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-400"></i> Diagnosis & Prescribed Fixes
+        </h4>
+        <div id="doctor-recommendations-list" class="space-y-2">
+          <!-- Populated by JS -->
+          <p class="text-xs text-slate-400">Analyzing past disconnection patterns...</p>
+        </div>
+      </div>
+
+      <!-- Historical Event Timeline -->
+      <div class="glass-panel p-5 space-y-4">
+        <h4 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i> WLAN AutoConfig Event Timeline
+        </h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-800/60 text-slate-400 border-b border-slate-700">
+              <tr>
+                <th class="p-3">Timestamp</th>
+                <th class="p-3">Category</th>
+                <th class="p-3">Event Summary</th>
+                <th class="p-3">Reason Code</th>
+                <th class="p-3">SSID</th>
+              </tr>
+            </thead>
+            <tbody id="drops-timeline-tbody" class="divide-y divide-slate-800">
+              <tr>
+                <td colspan="5" class="p-6 text-center text-slate-400">Loading events...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: DNS TURBO BENCHMARK                 -->
+    <!-- ========================================== -->
+    <div id="tab-dns" class="tab-content space-y-6 hidden">
+      
+      <!-- DNS Benchmark Header -->
+      <div class="glass-panel p-6 border-cyan-500/30">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="text-xs uppercase font-bold text-cyan-400 tracking-wider">Domain Name Resolution Optimizer</span>
+            <h3 class="text-xl font-bold text-white">DNS Speed Benchmark & 1-Click Switcher</h3>
+            <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Tests domain lookup times (UDP port 53) across global tier-1 resolvers. Switching to a fast DNS makes all website loads and matchmakings instantaneous.
+            </p>
+          </div>
+          <button onclick="runDnsBenchmark(true)" class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-xl transition">
+            <i data-lucide="zap" class="w-4 h-4"></i> Run Benchmark
+          </button>
+        </div>
+      </div>
+
+      <!-- DNS Benchmark Bar Chart -->
+      <div class="glass-panel p-5 space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 text-cyan-400"></i> Lookup Latency Comparison (Lower is Faster)
+          </h3>
+          <span class="text-xs text-slate-400">Querying live root zones</span>
+        </div>
+        <div class="h-64 relative">
+          <canvas id="chart-dns-bench"></canvas>
+        </div>
+      </div>
+
+      <!-- Provider Cards Grid -->
+      <div id="dns-providers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Revert to DHCP -->
+      <div class="glass-panel p-4 flex items-center justify-between">
+        <div>
+          <h4 class="text-sm font-bold text-white">Reset DNS to Automatic (DHCP)</h4>
+          <p class="text-xs text-slate-400">Reverts custom DNS servers back to your router's default DHCP server.</p>
+        </div>
+        <button onclick="setCustomDns('', '')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition">
+          Reset to Automatic
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 6: BUFFERBLOAT & SPEED                 -->
+    <!-- ========================================== -->
+    <div id="tab-bufferbloat" class="tab-content space-y-6 hidden">
+      
+      <!-- Bufferbloat Header -->
+      <div class="glass-panel p-6 border-blue-500/30">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="text-xs uppercase font-bold text-blue-400 tracking-wider">Queueing Latency Under Load</span>
+            <h3 class="text-xl font-bold text-white">Bufferbloat & Throughput Tester</h3>
+            <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Measures how much latency spikes when your network is downloading. Explains why Discord calls cut out or games freeze whenever anyone downloads files.
+            </p>
+          </div>
+          <button id="btn-run-bufferbloat" onclick="runBufferbloatTest(this)" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition">
+            <i data-lucide="gauge" class="w-4 h-4"></i> Run Bufferbloat Test
+          </button>
+        </div>
+      </div>
+
+      <!-- Bufferbloat Metrics Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Grade Box -->
+        <div class="glass-panel p-6 flex flex-col justify-between items-center text-center">
+          <span class="text-xs uppercase font-semibold text-slate-400">Bufferbloat Grade</span>
+          <div id="bb-grade" class="w-24 h-24 rounded-3xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-4xl font-black text-white my-4">
+            --
+          </div>
+          <p id="bb-grade-desc" class="text-xs text-slate-400">
+            Click 'Run Bufferbloat Test' to measure latency under load.
+          </p>
+        </div>
+
+        <!-- Latency Difference Breakdown -->
+        <div class="glass-panel p-6 lg:col-span-2 space-y-4">
+          <h4 class="text-sm font-bold text-white">Latency Shift Under Load</h4>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+              <span class="text-xs text-slate-400">Unloaded Ping</span>
+              <div class="text-2xl font-bold text-emerald-400 mt-1" id="bb-unloaded-ms">-- ms</div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+              <span class="text-xs text-slate-400">Loaded Ping</span>
+              <div class="text-2xl font-bold text-amber-400 mt-1" id="bb-loaded-ms">-- ms</div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
+              <span class="text-xs text-slate-400">Bufferbloat Delta</span>
+              <div class="text-2xl font-bold text-cyan-400 mt-1" id="bb-delta-ms">+-- ms</div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+            <span class="text-xs text-slate-400">Estimated Download Bandwidth:</span>
+            <span class="text-lg font-bold text-white ml-2" id="bb-speed-mbps">-- Mbps</span>
+          </div>
+
+          <p id="bb-recommendation" class="text-xs text-slate-300 leading-relaxed border-t border-slate-800 pt-3">
+            --
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 7: BANDWIDTH HOGS & SOCKETS            -->
+    <!-- ========================================== -->
+    <div id="tab-processes" class="tab-content space-y-6 hidden">
+      
+      <!-- Process Header -->
+      <div class="glass-panel p-6 border-slate-800">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Windows Process Inspection</span>
+            <h3 class="text-xl font-bold text-white">Active Network Processes & Sockets</h3>
+            <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Identifies background processes opening hundreds of sockets or consuming network bandwidth (e.g. torrents, launchers, game updates).
+            </p>
+          </div>
+          <button onclick="fetchProcesses(true)" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh Processes
+          </button>
+        </div>
+      </div>
+
+      <!-- Warning banners if any -->
+      <div id="process-warnings-container" class="space-y-2"></div>
+
+      <!-- Processes Table -->
+      <div class="glass-panel p-5 space-y-4">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-800/60 text-slate-400 border-b border-slate-700">
+              <tr>
+                <th class="p-3">Process Name</th>
+                <th class="p-3">PID</th>
+                <th class="p-3">Category</th>
+                <th class="p-3">Active Sockets</th>
+                <th class="p-3">Memory (MB)</th>
+                <th class="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="processes-tbody" class="divide-y divide-slate-800">
+              <tr>
+                <td colspan="6" class="p-6 text-center text-slate-400">Loading active processes...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 8: LOCAL REPAIR CENTER                 -->
+    <!-- ========================================== -->
+    <div id="tab-repair" class="tab-content space-y-6 hidden">
+      
+      <!-- Master Repair Hero Card -->
+      <div class="glass-panel p-8 border-cyan-500/40 relative overflow-hidden bg-gradient-to-r from-slate-900/90 via-slate-900/90 to-cyan-950/30">
+        <div class="max-w-2xl space-y-3">
+          <span class="text-xs uppercase font-extrabold text-cyan-400 tracking-wider flex items-center gap-1.5">
+            <i data-lucide="sparkles" class="w-4 h-4"></i> Complete Autonomous Repair
+          </span>
+          <h2 class="text-2xl font-extrabold text-white">Full 1-Click Local Network Auto-Repair</h2>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Sequentially flushes corrupted DNS resolver caches, deletes stale ARP mappings, unthrottles Windows TCP window autotuning, disables hardware power sleeping, and requests a clean DHCP lease from your router. Completely local—zero ISP contact required.
+          </p>
+          <div class="pt-2">
+            <button onclick="triggerFullRepair()" class="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg shadow-cyan-500/30 transition active:scale-95">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> Run Master Auto-Repair Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modular Local Fixes Grid -->
+      <div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">Individual Diagnostics & Fixes</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="rotate-ccw" class="w-4 h-4 text-cyan-400"></i> Flush DNS Cache & Dynamic Register
+                </h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">Safe</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Clears corrupted domain records from Windows DNS client and initiates registration of local DNS names.
+              </p>
+            </div>
+            <button onclick="runSingleAction('flush_dns', this)" class="mt-4 py-2 bg-slate-800 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Flush & Register DNS
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="refresh-cw" class="w-4 h-4 text-emerald-400"></i> Clear ARP / Neighbor Cache
+                </h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">Safe</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Flushes stale IP-to-MAC resolution tables for the local subnet, ensuring immediate router packet delivery.
+              </p>
+            </div>
+            <button onclick="runSingleAction('clear_arp', this)" class="mt-4 py-2 bg-slate-800 hover:bg-emerald-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Clear ARP Cache
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Optimize Windows TCP Stack
+                </h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">High Impact</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Sets AutoTuningLevel to normal, enables Receive-Side Scaling (RSS), and activates RFC 1323 timestamps to eliminate throughput caps.
+              </p>
+            </div>
+            <button onclick="runSingleAction('tune_tcp', this)" class="mt-4 py-2 bg-slate-800 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Optimize TCP Parameters
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="battery-charging" class="w-4 h-4 text-emerald-400"></i> Fix Adapter Power Throttling
+                </h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">Stability</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Disables Windows selective suspend and power management on the wireless chip, preventing sudden drop-offs.
+              </p>
+            </div>
+            <button onclick="runSingleAction('fix_power_save', this)" class="mt-4 py-2 bg-slate-800 hover:bg-emerald-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Disable Power Sleep
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="gamepad-2" class="w-4 h-4 text-amber-400"></i> Anti-Lag Gaming Adapter Tuning
+                </h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">Gaming</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Sets Roaming Aggressiveness to Lowest (stops background scan spikes) and activates Throughput Booster packet bursting.
+              </p>
+            </div>
+            <button onclick="runSingleAction('tune_adapter_gaming', this)" class="mt-4 py-2 bg-slate-800 hover:bg-amber-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Tune Adapter Parameters
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="radio" class="w-4 h-4 text-cyan-400"></i> Renew DHCP IP Address Lease
+                </h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">Safe</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Releases current local IPv4 lease and requests a fresh lease and routing parameters from your router's DHCP server.
+              </p>
+            </div>
+            <button onclick="runSingleAction('renew_dhcp', this)" class="mt-4 py-2 bg-slate-800 hover:bg-cyan-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Renew IP Lease
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="power" class="w-4 h-4 text-rose-400"></i> Restart Wireless Adapter
+                </h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-rose-500/20 text-rose-400">Driver Reset</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Soft power-cycles the Wi-Fi adapter device without requiring a full computer reboot. Reconnects in 3-5 seconds.
+              </p>
+            </div>
+            <button onclick="runSingleAction('restart_adapter', this)" class="mt-4 py-2 bg-slate-800 hover:bg-rose-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Restart Wi-Fi Adapter
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i> Reset Winsock & TCP/IP Stack
+                </h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-rose-500/20 text-rose-400">Reboot Advised</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Rebuilds corrupted Windows network socket catalog and rewrites TCP/IP registry keys back to clean defaults.
+              </p>
+            </div>
+            <button onclick="runSingleAction('reset_winsock', this)" class="mt-4 py-2 bg-slate-800 hover:bg-rose-600 hover:text-white rounded-lg text-xs font-semibold text-slate-200 transition">
+              Reset Winsock Stack
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Router Configuration & Physical Optimization Guide -->
+      <div class="glass-panel p-6 border-slate-800 space-y-4">
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="compass" class="w-4 h-4 text-cyan-400"></i> Router Placement & Channel Optimization Guide
+          </h4>
+          <a id="btn-guide-router-link" href="#" target="_blank" class="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-xs font-medium border border-cyan-500/30 flex items-center gap-1">
+            Open Router Gateway <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <span class="font-bold text-white">1. Separate 2.4 GHz & 5/6 GHz</span>
+            <p class="text-slate-400">Many routers combine bands under one SSID. Split them or force your PC to connect to the 5 GHz / 6 GHz network for 5x to 10x higher throughput and zero microwave interference.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <span class="font-bold text-white">2. Fixed Clean Channel</span>
+            <p class="text-slate-400">Disable "Auto Channel" on your router. Set 2.4 GHz strictly to Channel 1, 6, or 11. On 5 GHz, use Channel 36, 44, or 149 (based on our Spectrum tab analysis).</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
+            <span class="font-bold text-white">3. Elevate & Clear Path</span>
+            <p class="text-slate-400">Keep the router at least 3-4 feet above floor level away from metal cabinets, mirrors, aquariums, and power bricks to eliminate multipath reflection and packet loss.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 9: 24/7 TIMELINE & OUTAGES             -->
+    <!-- ========================================== -->
+    <div id="tab-timeline" class="tab-content space-y-6 hidden">
+      
+      <!-- Timeline Header & Time Filters -->
+      <div class="glass-panel p-6 border-cyan-500/30">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs uppercase font-bold text-cyan-400 tracking-wider">24/7 Appliance Sentry</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Daemon Active
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-white">Continuous Network Latency & Outage Timeline</h3>
+            <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Monitors your local gateway and internet link every few seconds without consuming bandwidth. Logs micro-drops, jitter surges, and ISP downtime into a persistent database.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 mr-1">Time Range:</span>
+            <button onclick="setHistoryRange(1, this)" class="history-range-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white transition">1h</button>
+            <button onclick="setHistoryRange(6, this)" class="history-range-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">6h</button>
+            <button onclick="setHistoryRange(24, this)" class="history-range-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">24h</button>
+            <button onclick="setHistoryRange(168, this)" class="history-range-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">7d</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outage Stats Row -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="glass-panel p-4">
+          <span class="text-xs text-slate-400">Reliability / Uptime</span>
+          <div class="text-2xl font-bold text-emerald-400 mt-1" id="stat-uptime-percent">100.0%</div>
+          <span class="text-xs text-slate-500">In selected window</span>
+        </div>
+        <div class="glass-panel p-4">
+          <span class="text-xs text-slate-400">Logged Outages</span>
+          <div class="text-2xl font-bold text-white mt-1" id="stat-incidents-count">0</div>
+          <span class="text-xs text-slate-500">Total connection drops</span>
+        </div>
+        <div class="glass-panel p-4">
+          <span class="text-xs text-slate-400">Total Downtime</span>
+          <div class="text-2xl font-bold text-amber-400 mt-1" id="stat-downtime-sec">0s</div>
+          <span class="text-xs text-slate-500">Cumulative drop duration</span>
+        </div>
+        <div class="glass-panel p-4">
+          <span class="text-xs text-slate-400">Max Latency Spike</span>
+          <div class="text-2xl font-bold text-cyan-400 mt-1" id="stat-max-spike-ms">-- ms</div>
+          <span class="text-xs text-slate-500">Peak RTT observed</span>
+        </div>
+      </div>
+
+      <!-- Continuous Latency & Loss Chart -->
+      <div class="glass-panel p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="activity" class="w-4 h-4 text-cyan-400"></i> Continuous Latency & Packet Loss Trend
+          </h4>
+          <span class="text-xs text-slate-400 font-mono" id="timeline-sample-count">Loading samples...</span>
+        </div>
+        <div class="h-72 relative">
+          <canvas id="chart-history-timeline"></canvas>
+        </div>
+      </div>
+
+      <!-- Recent Incidents & Auto-Heal Actions Table -->
+      <div class="glass-panel p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400"></i> Outage Incident Log & Auto-Repair History
+          </h4>
+          <span class="text-xs text-slate-400">Persistent SQLite Database</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-800/60 text-slate-400 border-b border-slate-700">
+              <tr>
+                <th class="p-3">Incident Time</th>
+                <th class="p-3">Type</th>
+                <th class="p-3">Duration</th>
+                <th class="p-3">Root Cause Diagnosis</th>
+                <th class="p-3">Recommended Fix & Immediate Action</th>
+                <th class="p-3">Auto-Healed</th>
+                <th class="p-3">Alert Delivered</th>
+              </tr>
+            </thead>
+            <tbody id="incidents-history-tbody" class="divide-y divide-slate-800">
+              <tr>
+                <td colspan="7" class="p-6 text-center text-slate-400">Loading logged incidents...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 10: ALERTS & PHONE PUSH                -->
+    <!-- ========================================== -->
+    <div id="tab-alerts" class="tab-content space-y-6 hidden">
+      
+      <!-- Alerts Banner -->
+      <div class="glass-panel p-6 border-amber-500/30">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="text-xs uppercase font-bold text-amber-400 tracking-wider">Multi-Channel Push Notifications</span>
+            <h3 class="text-xl font-bold text-white">Phone & Computer Alert Dispatcher</h3>
+            <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              Get notified instantly on your phone or desktop whenever NetPulse detects a network drop, severe packet loss, or initiates autonomous auto-healing.
+            </p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button onclick="testNotification(this)" class="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-amber-500/20 transition active:scale-95">
+              <i data-lucide="send" class="w-4 h-4"></i> Send Test Alert
+            </button>
+            <button onclick="saveNotificationSettings(this)" class="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-cyan-500/20 transition active:scale-95">
+              <i data-lucide="save" class="w-4 h-4"></i> Save Settings
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification Channels Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Channel 0: Native Windows Desktop Toast Notification -->
+        <div class="glass-panel p-6 space-y-4 border-cyan-500/40 shadow-lg shadow-cyan-950/20">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white">Windows Desktop Notifications</h4>
+                <span class="text-xs text-emerald-400 font-semibold">Native Toast • Active During Full-Screen Gaming</span>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="setting-windows-toast-enabled" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+            </label>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Immediately pops up a native Windows Toast notification in the corner of your screen when a drop is detected, showing the exact root cause and step-by-step fix instructions without needing an external app.
+          </p>
+
+          <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
+            <button type="button" onclick="testWindowsToast(this)" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow transition active:scale-95">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i> Test Windows Toast
+            </button>
+            <span class="text-[11px] text-slate-400 font-mono">Real-time • 0ms delay</span>
+          </div>
+        </div>
+
+        <!-- Channel 1: ntfy.sh (Zero Account Phone & PC Push) -->
+        <div class="glass-panel p-6 space-y-4 border-cyan-500/30">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                <i data-lucide="smartphone" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white">ntfy.sh Push (Phone & PC)</h4>
+                <span class="text-xs text-emerald-400 font-semibold">100% Free • No Account Required</span>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="setting-ntfy-enabled" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+            </label>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Pushes instant notifications directly to your iPhone, Android, or desktop. Just create your own private topic name below:
+          </p>
+
+          <div class="space-y-1.5">
+            <label class="text-xs text-slate-400 font-medium">Notification Topic Name:</label>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500 font-mono">https://ntfy.sh/</span>
+              <input type="text" id="setting-ntfy-topic" value="netpulse-alerts" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500">
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 space-y-1.5">
+            <span class="font-bold text-white flex items-center gap-1.5">
+              <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> How to receive alerts on your phone:
+            </span>
+            <p class="text-slate-400 leading-relaxed">
+              1. Install the free <strong>ntfy</strong> app on your iPhone (App Store) or Android (Google Play), or open your browser.<br>
+              2. Subscribe to: <code id="ntfy-topic-preview" class="text-cyan-400 font-bold font-mono">ntfy.sh/netpulse-alerts</code><br>
+              3. You will immediately get push alerts whenever your network drops or has issues!
+            </p>
+          </div>
+        </div>
+
+        <!-- Channel 2: Discord Webhooks (Multi-Webhook Support) -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                <i data-lucide="message-square" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-sm font-bold text-white">Discord Webhooks</h4>
+                  <span id="discord-webhooks-counter" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">0 Configured</span>
+                </div>
+                <span class="text-xs text-slate-400">Broadcast alerts to multiple Discord channels / servers</span>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="setting-discord-enabled" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Sends rich embedded alert cards with color-coded outage indicators. Add multiple webhooks below to broadcast alerts simultaneously (e.g., to <code class="text-blue-300 font-mono">#network-ops</code> and a private mobile alert channel).
+          </p>
+
+          <!-- List of Discord Webhooks -->
+          <div id="discord-webhooks-container" class="space-y-3">
+            <!-- Populated dynamically via JavaScript -->
+          </div>
+
+          <!-- Bottom Action Row: Add Button & Discord Guide -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+            <button type="button" onclick="addDiscordWebhookRow('', '')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/30 text-xs font-semibold transition active:scale-95 shadow-sm">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Another Discord Webhook
+            </button>
+            <span class="text-[11px] text-slate-400 flex items-center gap-1">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-blue-400"></i> Server Settings &rarr; Integrations &rarr; Webhooks
+            </span>
+          </div>
+        </div>
+
+        <!-- Channel 3: Telegram Bot -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
+                <i data-lucide="send" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white">Telegram Alerts</h4>
+                <span class="text-xs text-slate-400">Direct message to your Telegram</span>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="setting-telegram-enabled" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+            </label>
+          </div>
+
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="text-xs text-slate-400 font-medium">Bot API Token:</label>
+              <input type="text" id="setting-telegram-token" placeholder="123456:ABC-DEF..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-sky-500">
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs text-slate-400 font-medium">Chat ID:</label>
+              <input type="text" id="setting-telegram-chat" placeholder="Your Telegram Chat ID" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-sky-500">
+            </div>
+          </div>
+        </div>
+
+        <!-- Channel 4: Browser Desktop Push & Autonomous Auto-Repair -->
+        <div class="glass-panel p-6 space-y-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i data-lucide="shield" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-white">Browser Push & Auto-Healing</h4>
+              <span class="text-xs text-slate-400">Desktop notifications & self-repair</span>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <button onclick="requestBrowserNotificationPermission(this)" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg border border-slate-700 flex items-center justify-center gap-2 transition">
+              <i data-lucide="bell-ring" class="w-4 h-4 text-cyan-400"></i> Enable Browser Desktop Notifications
+            </button>
+
+            <div class="pt-2 space-y-2 border-t border-slate-800">
+              <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+                <input type="checkbox" id="setting-auto-heal" class="rounded bg-slate-900 border-slate-700 text-cyan-600 focus:ring-0" checked>
+                <span><strong>Autonomous Self-Healing:</strong> Flush DNS & refresh ARP upon drop</span>
+              </label>
+
+              <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+                <input type="checkbox" id="setting-alert-drop" class="rounded bg-slate-900 border-slate-700 text-cyan-600 focus:ring-0" checked>
+                <span>Alert immediately when connection drops</span>
+              </label>
+
+              <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+                <input type="checkbox" id="setting-alert-latency" class="rounded bg-slate-900 border-slate-700 text-cyan-600 focus:ring-0" checked>
+                <span>Alert on severe latency spikes (> 80ms)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 11: SECURITY & VULNERABILITY AUDIT     -->
+    <!-- ========================================== -->
+    <div id="tab-security" class="tab-content space-y-6 hidden">
+      
+      <!-- Top Security Score Card -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Score Card -->
+        <div class="glass-panel p-6 flex flex-col justify-between relative overflow-hidden border-cyan-500/30">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs uppercase font-bold text-cyan-400 tracking-wider">Network Integrity & Defense</span>
+              <h3 class="text-xl font-bold text-white mt-1">Security Score</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Automated 6-vector vulnerability inspection</p>
+            </div>
+            <div id="sec-grade-badge" class="px-3 py-1 rounded-full text-xs font-bold border bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+              ANALYZING
+            </div>
+          </div>
+
+          <div class="mt-6 space-y-2">
+            <div class="flex justify-between items-baseline">
+              <span class="text-3xl font-extrabold font-mono text-white" id="sec-score-text">--%</span>
+              <span class="text-xs font-semibold text-slate-400" id="sec-grade-text">Running Audit...</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+              <div id="sec-progress-bar" class="h-3 rounded-full bg-cyan-500 transition-all duration-700" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">Gateway Target:</span>
+            <span class="font-mono text-slate-200" id="sec-gateway-target">192.168.1.1</span>
+          </div>
+        </div>
+
+        <!-- Quick Summary & Action Card -->
+        <div class="glass-panel p-6 lg:col-span-2 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i> Vulnerability Audit Summary
+              </h4>
+              <button id="btn-run-security-audit" onclick="fetchSecurityAudit(true)" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition active:scale-95 shadow">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Re-Scan Security
+              </button>
+            </div>
+            <p class="text-xs text-slate-300 mt-3 leading-relaxed">
+              NetPulse Pro conducts passive and active defensive inspection against common Wi-Fi, router, and local network vulnerabilities—including outdated Wi-Fi ciphers, unencrypted management interfaces, host firewall bypasses, ARP spoofing (MitM), and DNS poisoning.
+            </p>
+          </div>
+
+          <!-- Stats Counters -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center">
+              <span class="text-[10px] uppercase font-bold text-rose-400">Critical Risks</span>
+              <div class="text-xl font-bold font-mono text-rose-400 mt-1" id="sec-critical-count">0</div>
+            </div>
+            <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+              <span class="text-[10px] uppercase font-bold text-amber-400">Warnings</span>
+              <div class="text-xl font-bold font-mono text-amber-400 mt-1" id="sec-warning-count">0</div>
+            </div>
+            <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+              <span class="text-[10px] uppercase font-bold text-emerald-400">Checks Passed</span>
+              <div class="text-xl font-bold font-mono text-emerald-400 mt-1" id="sec-passed-count">6</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Actionable Vulnerability Remediations -->
+      <div class="glass-panel p-6 space-y-4">
+        <h4 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i> Identified Vulnerabilities & 1-Click Fixes
+        </h4>
+        <div id="sec-actionable-fixes-container" class="space-y-3">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- 6-Vector Security Detailed Breakdown Grid -->
+      <div class="space-y-3">
+        <h4 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i> 6-Vector Defense Audit Breakdown
+        </h4>
+        <div id="sec-checks-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+  </div>
+
+  <!-- MODAL: MASTER AUTO-REPAIR PROGRESS -->
+  <div id="repair-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-lg w-full p-6 space-y-5 border-cyan-500/40 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-cyan-400"></i> Autonomous Network Repair
+        </h3>
+        <span id="repair-modal-status" class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-medium">Running...</span>
+      </div>
+      
+      <div id="repair-steps-container" class="space-y-3 text-xs">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button id="btn-close-repair-modal" onclick="closeRepairModal()" disabled class="px-5 py-2 rounded-xl bg-slate-800 text-slate-400 text-xs font-semibold cursor-not-allowed transition">
+          Completed
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- APPLICATION SCRIPTS -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

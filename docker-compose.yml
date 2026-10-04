@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  netpulse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: netpulse-pro:latest
+    container_name: netpulse-sentry
+    restart: unless-stopped
+    # host networking mode is critical on Raspberry Pi to allow direct raw ICMP ping
+    # and default gateway routing to the router without Docker NAT jitter overhead
+    network_mode: host
+    environment:
+      - NETPULSE_DOCKER=1
+      - NETPULSE_DATA_DIR=/app/data
+    volumes:
+      # Persistent SQLite database & configuration
+      - ./data:/app/data
+      # Read Raspberry Pi thermal metrics and system load
+      - /sys:/sys:ro
+      - /proc:/proc:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
