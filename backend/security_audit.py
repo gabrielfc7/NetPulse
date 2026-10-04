@@ -1,8 +1,10 @@
 import socket
 import platform
 import re
+import time
 import psutil
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Any, Optional
 from .utils import get_default_gateway, run_command, run_powershell, is_admin
 
@@ -10,7 +12,10 @@ logger = logging.getLogger("NetPulseSecurity")
 
 IS_WINDOWS = platform.system() == "Windows"
 
-def _test_tcp_port(ip: str, port: int, timeout_sec: float = 0.5) -> bool:
+_cached_audit: Optional[Dict[str, Any]] = None
+_cached_audit_ts: float = 0.0
+
+def _test_tcp_port(ip: str, port: int, timeout_sec: float = 0.25) -> bool:
     """Test if a TCP port is open with ultra-short timeout."""
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -118,12 +123,23 @@ def audit_router_gateway_exposure(gw_ip: str) -> Dict[str, Any]:
             "recommendation": "Ensure router firewall is enabled."
         }
 
-    # Test ports: 23 (Telnet), 80 (HTTP), 443 (HTTPS), 445 (SMB), 5000 (UPnP Web), 1900 (SSDP)
-    telnet_open = _test_tcp_port(gw_ip, 23, timeout_sec=0.3)
-    http_open = _test_tcp_port(gw_ip, 80, timeout_sec=0.3)
-    https_open = _test_tcp_port(gw_ip, 443, timeout_sec=0.3)
-    smb_open = _test_tcp_port(gw_ip, 445, timeout_sec=0.3)
-    upnp_open = _test_tcp_port(gw_ip, 5000, timeout_sec=0.3)
+    # Test ports concurrently: 23 (Telnet), 80 (HTTP), 443 (HTTPS), 445 (SMB), 5000 (UPnP Web)
+    ports = [23, 80, 443, 445, 5000]
+    port_results: Dict[int, bool] = {}
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_map = {executor.submit(_test_tcp_port, gw_ip, p, 0.25): p for p in ports}
+        for fut in future_map:
+            p = future_map[fut]
+            try:
+                port_results[p] = fut.result()
+            except Exception:
+                port_results[p] = False
+
+    telnet_open = port_results.get(23, False)
+    http_open = port_results.get(80, False)
+    https_open = port_results.get(443, False)
+    smb_open = port_results.get(445, False)
+    upnp_open = port_results.get(5000, False)
 
     findings = []
     deduction = 0
@@ -405,18 +421,31 @@ def audit_wildcard_listening_ports() -> Dict[str, Any]:
             "recommendation": "Local ports are properly sequestered."
         }
 
-def run_full_security_audit() -> Dict[str, Any]:
-    """Run comprehensive 6-vector network and Wi-Fi security vulnerability assessment."""
+def run_full_security_audit(force_refresh: bool = False) -> Dict[str, Any]:
+    """Run comprehensive 6-vector network and Wi-Fi security vulnerability assessment concurrently."""
+    global _cached_audit, _cached_audit_ts
+    now = time.time()
+    if not force_refresh and _cached_audit is not None and (now - _cached_audit_ts < 12.0):
+        return _cached_audit
+
     gw_ip = get_default_gateway()
 
-    checks = [
-        audit_wifi_encryption(),
-        audit_router_gateway_exposure(gw_ip),
-        audit_firewall_status(),
-        audit_arp_mitm_sentry(),
-        audit_dns_security(),
-        audit_wildcard_listening_ports()
-    ]
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        f_wifi = executor.submit(audit_wifi_encryption)
+        f_router = executor.submit(audit_router_gateway_exposure, gw_ip)
+        f_fw = executor.submit(audit_firewall_status)
+        f_arp = executor.submit(audit_arp_mitm_sentry)
+        f_dns = executor.submit(audit_dns_security)
+        f_ports = executor.submit(audit_wildcard_listening_ports)
+
+        checks = [
+            f_wifi.result(),
+            f_router.result(),
+            f_fw.result(),
+            f_arp.result(),
+            f_dns.result(),
+            f_ports.result()
+        ]
 
     total_deduction = sum(c.get("score_deduction", 0) for c in checks)
     score = max(0, min(100, 100 - total_deduction))
@@ -465,7 +494,7 @@ def run_full_security_audit() -> Dict[str, Any]:
                 "button_text": btn_text
             })
 
-    return {
+    res = {
         "score": score,
         "grade": grade,
         "badge_color": badge_color,
@@ -476,6 +505,9 @@ def run_full_security_audit() -> Dict[str, Any]:
         "checks": checks,
         "actionable_fixes": actionable_fixes
     }
+    _cached_audit = res
+    _cached_audit_ts = time.time()
+    return res
 
 def enable_host_firewall() -> Dict[str, Any]:
     """Enable Windows Defender Firewall on all profiles."""

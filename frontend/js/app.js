@@ -243,6 +243,7 @@ async function loadInitialData() {
   fetchHealthScore();
   fetchSystemHardware();
   runPingDiagnostic(false);
+  fetchSecurityAudit(false);
 }
 
 async function refreshAll() {
@@ -1945,7 +1946,7 @@ async function fetchSecurityAudit(notify = false) {
   }
 
   try {
-    const res = await fetch('/api/security-audit');
+    const res = await fetch(`/api/security-audit${notify ? '?force=true' : ''}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -2083,6 +2084,28 @@ async function fetchSecurityAudit(notify = false) {
     if (notify) showToast('Security Audit Complete', `Assessed 6 vectors. Overall Security Score: ${data.score}% (${data.grade})`, 'info');
   } catch (err) {
     console.error('Security audit error:', err);
+    const fixesContainer = document.getElementById('sec-actionable-fixes-container');
+    if (fixesContainer) {
+      fixesContainer.innerHTML = `
+        <div class="p-4 rounded-xl bg-rose-950/20 border border-rose-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-3">
+            <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-400 shrink-0"></i>
+            <div>
+              <strong class="text-rose-300">Security Audit Connection Error:</strong>
+              <div class="text-slate-400 mt-0.5">${escapeHtml(err.message || 'Server unreachable')}</div>
+            </div>
+          </div>
+          <button onclick="fetchSecurityAudit(true)" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold shrink-0 transition">
+            Retry Scan
+          </button>
+        </div>
+      `;
+    }
+    const scoreText = document.getElementById('sec-score-text');
+    if (scoreText && scoreText.innerText === '--%') scoreText.innerText = 'Err';
+    const gradeText = document.getElementById('sec-grade-text');
+    if (gradeText) gradeText.innerText = 'Scan error';
+    initLucide();
     if (notify) showToast('Security Audit Failed', err.message, 'error');
   } finally {
     if (btn) {

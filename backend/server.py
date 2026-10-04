@@ -336,12 +336,12 @@ def get_full_health():
     return _compute_full_health()
 
 @app.get("/api/security-audit")
-def get_security_audit():
+def get_security_audit(force: bool = False):
     """
     Perform 6-vector defensive security and vulnerability audit:
     Wi-Fi encryption, Router gateway ports, Host firewall, ARP MitM, DNS integrity, Wildcard ports.
     """
-    return run_full_security_audit()
+    return run_full_security_audit(force_refresh=force)
 
 @app.post("/api/security-fix/{action}")
 def run_security_fix_action(action: str):
