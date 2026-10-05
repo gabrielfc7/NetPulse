@@ -72,7 +72,7 @@ Running NetPulse Pro natively on Windows gives the app direct access to the Wind
 #### Quick Start:
 1. Clone or download the repository:
    ```powershell
-   git clone https://github.com/gabrielcacao/NetPulse.git
+   git clone https://github.com/gabrielfc7/NetPulse.git
    cd NetPulse
    ```
 2. Install Python 3.10+ (ensure *"Add Python to PATH"* is checked during installation).
@@ -152,7 +152,7 @@ NetPulse Pro includes a multi-arch container image (`linux/amd64` and `linux/arm
 
 ```bash
 # Clone the repository
-git clone https://github.com/gabrielcacao/NetPulse.git
+git clone https://github.com/gabrielfc7/NetPulse.git
 cd NetPulse
 
 # Start the container
