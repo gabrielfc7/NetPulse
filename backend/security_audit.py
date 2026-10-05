@@ -192,16 +192,30 @@ def audit_router_gateway_exposure(gw_ip: str) -> Dict[str, Any]:
 def audit_firewall_status() -> Dict[str, Any]:
     """Audit Windows Defender Firewall or Linux iptables/ufw."""
     if not IS_WINDOWS:
-        code, out, _ = run_command("ufw status 2>/dev/null || iptables -L -n 2>/dev/null", timeout=3)
-        if "active" in out.lower() or "chain" in out.lower():
+        is_active = False
+        try:
+            if os.path.exists("/etc/ufw/ufw.conf"):
+                with open("/etc/ufw/ufw.conf", "r") as f:
+                    content = f.read()
+                    if "ENABLED=yes" in content:
+                        is_active = True
+        except Exception:
+            pass
+
+        if not is_active:
+            code, out, _ = run_command("PATH=$PATH:/usr/sbin:/sbin ufw status 2>/dev/null || PATH=$PATH:/usr/sbin:/sbin iptables -L -n 2>/dev/null", timeout=3)
+            if "active" in out.lower() or "chain" in out.lower():
+                is_active = True
+
+        if is_active:
             return {
                 "id": "firewall_status",
                 "name": "Host Firewall Defense",
                 "category": "Host Protection",
                 "status": "passed",
                 "score_deduction": 0,
-                "details": "Linux firewall (UFW/iptables) rules are active.",
-                "recommendation": "Host firewall is filtering inbound packets."
+                "details": "Linux firewall (UFW) is ACTIVE with packet filtering enabled.",
+                "recommendation": "Host firewall defense is fully active."
             }
         return {
             "id": "firewall_status",
@@ -490,7 +504,7 @@ def run_full_security_audit(force_refresh: bool = False) -> Dict[str, Any]:
                 btn_text = "Flush ARP Cache"
             elif cid == "firewall_status":
                 action = "enable_firewall"
-                btn_text = "Enable Windows Firewall"
+                btn_text = "Enable Windows Firewall" if IS_WINDOWS else "Enable Linux Firewall (UFW)"
             elif cid == "open_listening_ports":
                 if "445" in c.get("details", ""):
                     action = "disable_smb"
