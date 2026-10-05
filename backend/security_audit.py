@@ -396,7 +396,9 @@ def audit_wildcard_listening_ports() -> Dict[str, Any]:
                             proc_name = psutil.Process(c.pid).name()
                     except Exception:
                         pass
-                    exposed_risks.append(f"Port {port} ({high_risk_ports[port]} - {proc_name})")
+                    item = f"Port {port} ({high_risk_ports[port]} - {proc_name})"
+                    if item not in exposed_risks:
+                        exposed_risks.append(item)
     except Exception as e:
         logger.debug(f"Socket connection check note: {e}")
 
