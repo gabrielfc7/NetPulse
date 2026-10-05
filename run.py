@@ -37,11 +37,14 @@ def main():
     # Launch browser in separate thread
     threading.Thread(target=open_browser, daemon=True).start()
 
+    host = os.environ.get("NETPULSE_HOST", "0.0.0.0")
+    port = int(os.environ.get("NETPULSE_PORT", "8765"))
+
     # Start FastAPI server
     uvicorn.run(
         "backend.server:app",
-        host="127.0.0.1",
-        port=8765,
+        host=host,
+        port=port,
         log_level="info",
         access_log=False
     )
