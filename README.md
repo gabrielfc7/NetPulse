@@ -1,6 +1,6 @@
 # NetPulse Pro ⚡ - Autonomous Wi-Fi & Network Diagnostic Studio
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Raspberry%20Pi%20%7C%20Linux%20%7C%20Docker-cyan.svg)](#-deployment-options)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com)
 [![Support](https://img.shields.io/badge/Support-Buy%20Me%20a%20Coffee-yellow.svg)](https://buymeacoffee.com/gabrielcacao)
@@ -12,7 +12,7 @@
 
 ## ☕ Support the Project
 
-NetPulse Pro is 100% free, open-source, and privacy-respecting. All network telemetry and security audits run **locally on your machine** without sending data to third parties.
+NetPulse Pro is 100% free, source-available, and privacy-respecting. All network telemetry and security audits run **locally on your machine** without sending data to third parties.
 
 If you enjoy NetPulse Pro or if it helped you solve lag spikes, disconnects, or router vulnerabilities, consider supporting ongoing development:
 
@@ -227,17 +227,20 @@ NetPulse/
 ├── start.bat                  # Standard Windows batch launcher
 ├── start_admin.bat            # Elevated Windows Administrator launcher
 ├── requirements.txt           # Python dependencies
-├── LICENSE                    # MIT Open Source License
+├── LICENSE                    # PolyForm Noncommercial 1.0.0 License
 └── README.md                  # Comprehensive Documentation
 ```
 
 ---
 
-## 📜 Open Source License & Attribution
+## 📜 License & Attribution
 
-This project is licensed under the **MIT License** — you are free to use, modify, distribute, and build upon it.
+This project is source-available under the **[PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/)**. 
 
-See the full [LICENSE](LICENSE) for details.
+- **Permitted Use**: You are free to view, test, run, modify, and build upon this code for personal study, research, education, hobby projects, or non-profit organizations.
+- **Commercial Restriction**: Commercial use, monetized distribution, or commercial integration is not permitted without a separate commercial license from the author.
+
+See the full [LICENSE](LICENSE) for complete terms.
 
 ### 👤 Author & Maintainer
 - **Gabriel Cacao**
