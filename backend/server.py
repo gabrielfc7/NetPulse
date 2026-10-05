@@ -188,23 +188,6 @@ def get_bandwidth_realtime(interface: Optional[str] = None):
     """Real-time interface I/O bandwidth throughput engine."""
     return bandwidth_tracker.get_realtime_bandwidth(interface_hint=interface)
 
-@app.get("/api/security-audit")
-def get_security_audit():
-    """Run comprehensive 6-vector network security & vulnerability audit."""
-    return run_full_security_audit()
-
-@app.post("/api/security-fix/{action}")
-def execute_security_fix(action: str):
-    """Execute 1-click remediation for detected security vulnerabilities."""
-    action = action.lower()
-    if action == "enable_firewall":
-        return enable_host_firewall()
-    elif action == "apply_quad9_dns":
-        return apply_adapter_dns("9.9.9.9", "149.112.112.112", "Wi-Fi")
-    elif action == "clear_arp":
-        return clear_arp_cache()
-    else:
-        raise HTTPException(status_code=400, detail=f"Unknown security fix action: {action}")
 
 @app.post("/api/optimize/{action}")
 def execute_optimization(action: str):
@@ -349,15 +332,16 @@ def run_security_fix_action(action: str):
     """
     Apply 1-click remediation for detected security vulnerabilities.
     """
-    if action == "enable_firewall":
+    act = action.lower().strip()
+    if act == "enable_firewall":
         return enable_host_firewall()
-    elif action == "clear_arp":
+    elif act == "clear_arp":
         return clear_arp_cache()
-    elif action == "apply_quad9_dns":
-        return apply_adapter_dns("Wi-Fi", "9.9.9.9", "149.112.112.112")
-    elif action == "disable_smb":
+    elif act == "apply_quad9_dns":
+        return apply_adapter_dns("9.9.9.9", "149.112.112.112", "Wi-Fi")
+    elif act == "disable_smb":
         return disable_smb_file_sharing()
-    elif action == "enable_smb":
+    elif act == "enable_smb":
         return enable_smb_file_sharing()
     else:
         raise HTTPException(status_code=400, detail=f"Unknown security fix action: {action}")
