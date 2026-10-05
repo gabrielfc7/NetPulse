@@ -29,8 +29,10 @@ If you enjoy NetPulse Pro or if it helped you solve lag spikes, disconnects, or 
   - **Host Firewall Status**: Verifies active Domain, Private, and Public profiles on Windows Defender Firewall or Linux UFW.
   - **ARP Spoofing & MitM Sentry**: Audits ARP tables for duplicate MACs, poisoned gateways, or rogue subnet responders.
   - **DNS Security & Privacy**: Validates encrypted DNS (Quad9, Cloudflare) and warns against unencrypted, easily-spoofed ISP resolvers.
-  - **LAN Service Exposure**: Scans wildcard listening ports (`0.0.0.0`) for exposed databases or unauthenticated remote services.
-  - **1-Click Vulnerability Remediations**: One-click actions to enable host firewalls, flush ARP tables, and apply Quad9 malware-blocking DNS.
+  - **LAN Service Exposure**: Scans wildcard listening ports (`0.0.0.0`) for exposed databases, unauthenticated services, and Windows SMB (`Port 445`).
+  - **1-Click Vulnerability Remediations**: One-click actions to enable host firewalls, flush ARP tables, apply Quad9 malware-blocking DNS, and shield/disable SMB File Sharing (`Port 445`) exposure.
+  - **Security Audit Report Export**: 1-click download of comprehensive security assessment reports as formatted Markdown (`.md`) and instant clipboard export.
+  - **Version Control & GitHub Update Checker**: Integrated in-app version manifest, commit SHA tracking, changelog viewer, and live GitHub release checking.
 - **🩺 Disconnect & Drop Doctor with Instant Solutions**:
   - Automatically isolates whether disconnects originate from your **Local Router Gateway** (Wi-Fi signal degradation, channel congestion, driver sleep throttling) or your **External ISP**.
   - Pushes **immediate actionable remediation advice** right after drops occur.

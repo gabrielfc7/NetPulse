@@ -403,6 +403,12 @@ def audit_wildcard_listening_ports() -> Dict[str, Any]:
         logger.debug(f"Socket connection check note: {e}")
 
     if exposed_risks:
+        has_smb = any("445" in r for r in exposed_risks)
+        rec = (
+            "Port 445 (SMB) is Windows File Sharing. If you don't share files/printers with other PCs on this Wi-Fi, 1-click shield LanmanServer to close port 445. If you do share files, restrict it to Private networks via Windows Firewall."
+            if has_smb else
+            "Bind sensitive local databases and services to 127.0.0.1 (localhost) only, or restrict via Windows Firewall."
+        )
         return {
             "id": "open_listening_ports",
             "name": "LAN Service Exposure (0.0.0.0)",
@@ -410,7 +416,7 @@ def audit_wildcard_listening_ports() -> Dict[str, Any]:
             "status": "warning",
             "score_deduction": 15,
             "details": f"Services listening on all network interfaces: {', '.join(exposed_risks)}.",
-            "recommendation": "Bind sensitive local databases and services to 127.0.0.1 (localhost) only, or restrict via Windows Firewall."
+            "recommendation": rec
         }
     else:
         return {
@@ -485,6 +491,10 @@ def run_full_security_audit(force_refresh: bool = False) -> Dict[str, Any]:
             elif cid == "firewall_status":
                 action = "enable_firewall"
                 btn_text = "Enable Windows Firewall"
+            elif cid == "open_listening_ports":
+                if "445" in c.get("details", ""):
+                    action = "disable_smb"
+                    btn_text = "1-Click Shield: Disable SMB (Port 445)"
 
             actionable_fixes.append({
                 "id": cid,
@@ -510,6 +520,54 @@ def run_full_security_audit(force_refresh: bool = False) -> Dict[str, Any]:
     _cached_audit = res
     _cached_audit_ts = time.time()
     return res
+
+def disable_smb_file_sharing() -> Dict[str, Any]:
+    """
+    Disable Windows SMB LanmanServer service to stop exposing Port 445 on 0.0.0.0.
+    Closes the listening socket and eliminates lateral LAN vulnerability.
+    """
+    global _cached_audit
+    _cached_audit = None  # Invalidate security audit cache
+
+    if not IS_WINDOWS:
+        code, out, _ = run_command("sudo systemctl stop smbd 2>/dev/null; sudo systemctl disable smbd 2>/dev/null || true")
+        return {"success": True, "message": "Linux Samba service disabled."}
+
+    script = "Stop-Service -Name LanmanServer -Force -ErrorAction SilentlyContinue; Set-Service -Name LanmanServer -StartupType Manual -ErrorAction SilentlyContinue"
+    if is_admin():
+        code, out, err = run_powershell(script)
+        ok = code == 0
+    else:
+        from .utils import run_elevated_powershell
+        ok, out = run_elevated_powershell(script)
+
+    return {
+        "success": ok,
+        "message": "Windows SMB (Port 445) File Sharing service successfully stopped and set to Manual. Inbound port 445 is now closed." if ok else f"Could not stop LanmanServer: {out}"
+    }
+
+def enable_smb_file_sharing() -> Dict[str, Any]:
+    """
+    Re-enable Windows SMB LanmanServer service if user requires local file/printer sharing.
+    """
+    global _cached_audit
+    _cached_audit = None
+
+    if not IS_WINDOWS:
+        return {"success": True, "message": "Non-Windows platform."}
+
+    script = "Set-Service -Name LanmanServer -StartupType Automatic -ErrorAction SilentlyContinue; Start-Service -Name LanmanServer -ErrorAction SilentlyContinue"
+    if is_admin():
+        code, out, err = run_powershell(script)
+        ok = code == 0
+    else:
+        from .utils import run_elevated_powershell
+        ok, out = run_elevated_powershell(script)
+
+    return {
+        "success": ok,
+        "message": "Windows SMB File Sharing (LanmanServer) re-enabled." if ok else f"Could not start LanmanServer: {out}"
+    }
 
 def enable_host_firewall() -> Dict[str, Any]:
     """Enable Windows Defender Firewall on all profiles."""

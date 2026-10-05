@@ -31,9 +31,10 @@ from .notifier import broadcast_alert, send_test_notification, test_single_disco
 from .monitor import monitor_daemon
 from .cache import system_cache, cached
 from .bandwidth import bandwidth_tracker
-from .security_audit import run_full_security_audit, enable_host_firewall
+from .security_audit import run_full_security_audit, enable_host_firewall, disable_smb_file_sharing, enable_smb_file_sharing
+from .version import get_full_version_manifest, check_remote_updates, CURRENT_VERSION
 
-app = FastAPI(title="NetPulse Pro - WiFi & Network Diagnostic Studio", version="1.0.0")
+app = FastAPI(title="NetPulse Pro - WiFi & Network Diagnostic Studio", version=CURRENT_VERSION)
 
 app.add_middleware(
     CORSMiddleware,
@@ -354,8 +355,26 @@ def run_security_fix_action(action: str):
         return clear_arp_cache()
     elif action == "apply_quad9_dns":
         return apply_adapter_dns("Wi-Fi", "9.9.9.9", "149.112.112.112")
+    elif action == "disable_smb":
+        return disable_smb_file_sharing()
+    elif action == "enable_smb":
+        return enable_smb_file_sharing()
     else:
         raise HTTPException(status_code=400, detail=f"Unknown security fix action: {action}")
+
+@app.get("/api/version")
+def get_version_info(force: bool = False):
+    """
+    Get application version, commit SHA, changelog, and remote GitHub update status.
+    """
+    return get_full_version_manifest(force_check=force)
+
+@app.post("/api/check-updates")
+def check_updates_now():
+    """
+    Check GitHub repository for newer releases and updates.
+    """
+    return check_remote_updates(force=True)
 
 # Serve Frontend static assets
 if FRONTEND_DIR.exists():

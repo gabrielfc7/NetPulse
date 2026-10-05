@@ -15,7 +15,9 @@ let appState = {
   historyHours: 1,
   isPolling: false,
   peakDlMbps: 0.0,
-  peakUlMbps: 0.0
+  peakUlMbps: 0.0,
+  lastSecurityData: null,
+  versionInfo: null
 };
 
 // Safe DOM manipulation helpers with strict null-checking
@@ -244,6 +246,7 @@ async function loadInitialData() {
   fetchSystemHardware();
   runPingDiagnostic(false);
   fetchSecurityAudit(false);
+  fetchVersionInfo(false);
 }
 
 async function refreshAll() {
@@ -1949,6 +1952,7 @@ async function fetchSecurityAudit(notify = false) {
     const res = await fetch(`/api/security-audit${notify ? '?force=true' : ''}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    appState.lastSecurityData = data;
 
     // 1. Update score & grades
     const scoreText = document.getElementById('sec-score-text');
@@ -2145,6 +2149,179 @@ async function runSecurityFix(action, btn) {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = originalHtml;
+      initLucide();
+    }
+  }
+}
+
+// -------------------------------------------------------------
+// SECURITY AUDIT REPORT EXPORT
+// -------------------------------------------------------------
+function exportSecurityReport() {
+  const data = appState.lastSecurityData;
+  if (!data) {
+    showToast('No Audit Data', 'Please run a security audit scan first before exporting.', 'warning');
+    return;
+  }
+
+  const dateStr = new Date().toLocaleString();
+  let md = `# NetPulse Pro - Network Security & Vulnerability Audit Report\n\n`;
+  md += `**Generated:** ${dateStr}  \n`;
+  md += `**Target Gateway:** \`${data.gateway_ip || 'Auto-detected'}\`  \n`;
+  md += `**Overall Security Defense Score:** **${data.score}/100** (${data.grade})  \n`;
+  md += `**Critical Risks:** ${data.critical_count} | **Warnings:** ${data.warning_count} | **Passed Checks:** ${data.passed_count}\n\n`;
+
+  md += `## 1. Actionable Findings & Remediations\n\n`;
+  if (!data.actionable_fixes || data.actionable_fixes.length === 0) {
+    md += `* Zero active vulnerabilities found. All 6 defensive vectors passed verification.\n\n`;
+  } else {
+    data.actionable_fixes.forEach((fix, idx) => {
+      md += `### ${idx + 1}. [${fix.severity.toUpperCase()}] ${fix.title}\n`;
+      md += `- **Problem:** ${fix.problem}\n`;
+      md += `- **Recommendation:** ${fix.recommendation}\n`;
+      if (fix.action && fix.action !== 'none') {
+        md += `- **Remediation Action Available:** 1-Click Shield via NetPulse Pro (\`${fix.action}\`)\n`;
+      }
+      md += `\n`;
+    });
+  }
+
+  md += `## 2. 6-Vector Defense Breakdown\n\n`;
+  if (data.checks) {
+    data.checks.forEach(c => {
+      md += `### ${c.name} (${c.category})\n`;
+      md += `- **Status:** \`${c.status.toUpperCase()}\` (Score deduction: -${c.score_deduction} pts)\n`;
+      md += `- **Details:** ${c.details}\n`;
+      md += `- **Guidance:** ${c.recommendation}\n\n`;
+    });
+  }
+
+  md += `---\n*Report generated locally by NetPulse Pro (v2.3.0). Zero external ISP or cloud data transmission.*`;
+
+  // 1. Copy to clipboard
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(md).catch(() => {});
+  }
+
+  // 2. Download markdown file
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `netpulse-security-audit-${Date.now()}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('Security Report Exported', 'Report downloaded (.md) and copied to clipboard.', 'success');
+}
+
+// -------------------------------------------------------------
+// VERSION CONTROL & SYSTEM UPDATES
+// -------------------------------------------------------------
+function openVersionModal() {
+  const modal = document.getElementById('version-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    fetchVersionInfo(false);
+    initLucide();
+  }
+}
+
+function closeVersionModal() {
+  const modal = document.getElementById('version-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function fetchVersionInfo(force = false) {
+  try {
+    const res = await fetch(`/api/version${force ? '?force=true' : ''}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    appState.versionInfo = data;
+
+    setText('vm-current-ver', `v${data.current_version}`);
+    setText('vm-channel', data.channel || 'Stable Pro');
+    setText('vm-commit', data.commit || 'main');
+    setText('vm-release-date', data.release_date || '2026-10-04');
+
+    // Update version badge in sidebar and header if present
+    const sbBadge = document.getElementById('btn-version-badge-text');
+    if (sbBadge) sbBadge.innerText = `v${data.current_version}`;
+    const hdrBadge = document.getElementById('hdr-version-badge-text');
+    if (hdrBadge) hdrBadge.innerText = `v${data.current_version}`;
+
+    const statusBanner = document.getElementById('vm-update-banner');
+    const statusText = document.getElementById('vm-status-text');
+    if (data.update_info && data.update_info.update_available) {
+      if (statusBanner) {
+        statusBanner.className = 'p-3 rounded-lg bg-cyan-950/40 border border-cyan-500/40 flex items-center justify-between text-xs text-cyan-300';
+      }
+      if (statusText) {
+        statusText.innerHTML = `<strong>Update Available:</strong> Version v${escapeHtml(data.update_info.latest_version)} is available on GitHub.`;
+      }
+    } else {
+      if (statusBanner) {
+        statusBanner.className = 'p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300';
+      }
+      if (statusText) {
+        statusText.innerText = 'You are running the latest version of NetPulse Pro.';
+      }
+    }
+
+    // Populate changelog
+    const clContainer = document.getElementById('vm-changelog-container');
+    if (clContainer && data.changelog) {
+      clContainer.innerHTML = data.changelog.map(item => `
+        <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-white font-mono">v${escapeHtml(item.version)}</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${item.tag === 'Latest' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-slate-800 text-slate-400'}">${escapeHtml(item.tag)}</span>
+            </div>
+            <span class="text-[10px] text-slate-500">${escapeHtml(item.date)}</span>
+          </div>
+          <ul class="list-disc list-inside space-y-0.5 text-slate-300 text-[11px] leading-relaxed">
+            ${(item.changes || []).map(ch => `<li>${escapeHtml(ch)}</li>`).join('')}
+          </ul>
+        </div>
+      `).join('');
+    }
+
+    initLucide();
+  } catch (err) {
+    console.debug('Version fetch error:', err);
+  }
+}
+
+async function triggerCheckUpdates() {
+  const btn = document.getElementById('btn-check-updates-now');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Checking...';
+    initLucide();
+  }
+
+  showToast('Checking Updates', 'Querying GitHub repository for new releases...', 'info');
+
+  try {
+    const res = await fetch('/api/check-updates', { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    await fetchVersionInfo(false);
+
+    if (data.update_available) {
+      showToast('New Update Available!', `NetPulse Pro v${data.latest_version} is available on GitHub.`, 'info');
+    } else {
+      showToast('Up to Date', `NetPulse Pro v${data.current_version} is the latest release.`, 'success');
+    }
+  } catch (err) {
+    showToast('Update Check', err.message || 'Could not connect to GitHub.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Check for Updates';
       initLucide();
     }
   }

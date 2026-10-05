@@ -31,7 +31,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="/static/css/style.css?v=2.3">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.4">
 </head>
 <body class="bg-dark-900 text-slate-100 min-h-screen flex flex-col lg:flex-row selection:bg-cyan-500 selection:text-white antialiased">
 
@@ -54,9 +54,15 @@
                 NetPulse <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 font-bold border border-cyan-500/30">PRO</span>
               </h1>
             </div>
-            <span id="admin-badge" class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-slate-900 text-slate-400 border border-slate-800">
-              Checking Privileges...
-            </span>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span id="admin-badge" class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-slate-900 text-slate-400 border border-slate-800">
+                Checking Privileges...
+              </span>
+              <button onclick="openVersionModal()" id="btn-version-badge" title="NetPulse Pro Version Control" class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-semibold transition flex items-center gap-1 active:scale-95">
+                <span id="btn-version-badge-text">v2.3.0</span>
+                <i data-lucide="git-branch" class="w-2.5 h-2.5"></i>
+              </button>
+            </div>
           </div>
         </div>
         <!-- Close button on mobile -->
@@ -225,6 +231,10 @@
 
         <!-- Actions: Auto-Fix All & Refresh -->
         <div class="flex items-center gap-2">
+          <button onclick="openVersionModal()" title="Version Control & Update Checker" class="flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-mono transition active:scale-95">
+            <i data-lucide="git-branch" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span id="hdr-version-badge-text" class="hidden xl:inline text-[11px] font-bold text-slate-200">v2.3.0</span>
+          </button>
           <button id="btn-master-repair" onclick="triggerFullRepair()" class="flex items-center gap-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-cyan-500/20 transition active:scale-95 whitespace-nowrap">
             <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
             <span class="hidden sm:inline">Smart Auto-Fix All</span>
@@ -1642,9 +1652,14 @@
               <h4 class="text-sm font-bold text-white flex items-center gap-2">
                 <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i> Vulnerability Audit Summary
               </h4>
-              <button id="btn-run-security-audit" onclick="fetchSecurityAudit(true)" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition active:scale-95 shadow">
-                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Re-Scan Security
-              </button>
+              <div class="flex items-center gap-2">
+                <button onclick="exportSecurityReport()" title="Export Security Audit Report (Markdown & Clipboard)" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition active:scale-95 shadow">
+                  <i data-lucide="download" class="w-3.5 h-3.5 text-cyan-400"></i> Export Report
+                </button>
+                <button id="btn-run-security-audit" onclick="fetchSecurityAudit(true)" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition active:scale-95 shadow">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Re-Scan Security
+                </button>
+              </div>
             </div>
             <p class="text-xs text-slate-300 mt-3 leading-relaxed">
               NetPulse Pro conducts passive and active defensive inspection against common Wi-Fi, router, and local network vulnerabilities—including outdated Wi-Fi ciphers, unencrypted management interfaces, host firewall bypasses, ARP spoofing (MitM), and DNS poisoning.
@@ -1735,10 +1750,80 @@
     </div>
   </div>
 
+  <!-- MODAL: VERSION CONTROL & UPDATE MANAGER -->
+  <div id="version-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel max-w-xl w-full p-6 space-y-5 border-cyan-500/40 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <i data-lucide="git-branch" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              Version Control & System Updates
+            </h3>
+            <span class="text-xs text-slate-400">Release tracking & GitHub repository synchronization</span>
+          </div>
+        </div>
+        <button onclick="closeVersionModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Current Version Status Card -->
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg font-extrabold text-white font-mono" id="vm-current-ver">v2.3.0</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30" id="vm-channel">Stable Pro</span>
+            </div>
+            <div class="text-xs text-slate-400 mt-1 flex items-center gap-2">
+              <span>Commit: <strong class="font-mono text-slate-300" id="vm-commit">095d29f</strong></span>
+              <span>•</span>
+              <span id="vm-release-date">Oct 4, 2026</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-check-updates-now" onclick="triggerCheckUpdates()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition active:scale-95 shadow">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Check for Updates
+            </button>
+            <a href="https://github.com/gabrielfc7/NetPulse" target="_blank" rel="noopener noreferrer" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition" title="Open GitHub Repository">
+              <i data-lucide="github" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Update Status Banner -->
+        <div id="vm-update-banner" class="p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300">
+          <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <span id="vm-status-text">You are running the latest version of NetPulse Pro.</span>
+        </div>
+      </div>
+
+      <!-- Release History / Changelog -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <i data-lucide="file-text" class="w-3.5 h-3.5 text-cyan-400"></i> Release Changelog
+        </h4>
+        <div id="vm-changelog-container" class="space-y-2.5 max-h-56 overflow-y-auto pr-1 text-xs">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
+        <span>Repository: <a href="https://github.com/gabrielfc7/NetPulse" target="_blank" class="text-cyan-400 hover:underline">gabrielfc7/NetPulse</a></span>
+        <button onclick="closeVersionModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toast-container"></div>
 
   <!-- APPLICATION SCRIPTS -->
-  <script src="/static/js/app.js?v=2.3"></script>
+  <script src="/static/js/app.js?v=2.4"></script>
 </body>
 </html>
