@@ -4,6 +4,8 @@ import re
 import time
 import psutil
 import logging
+import os
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Any, Optional
 from .utils import get_default_gateway, run_command, run_powershell, is_admin
