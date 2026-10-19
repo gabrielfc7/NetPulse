@@ -7,18 +7,43 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger("netpulse.version")
 
-CURRENT_VERSION = "2.3.0"
+CURRENT_VERSION = "2.5.0"
 APP_NAME = "NetPulse Pro"
 CHANNEL = "Stable Pro"
-RELEASE_DATE = "2026-10-04"
+RELEASE_DATE = "2026-10-19"
 GITHUB_REPO = "gabrielfc7/NetPulse"
 GITHUB_URL = f"https://github.com/{GITHUB_REPO}"
 
 CHANGELOG = [
     {
+        "version": "2.5.0",
+        "date": "2026-10-19",
+        "tag": "Latest",
+        "changes": [
+            "Added Client Device Verification & Scope Engine: diagnose the device viewing the dashboard (phone/laptop) vs. 24/7 Pi Sentry.",
+            "Sub-millisecond in-browser Wi-Fi round-trip ping and jitter measurement to local gateway.",
+            "Doctor Lag Origin Breakdown: pinpoints whether network latency comes from Device Wi-Fi, Local Router, or Upstream ISP.",
+            "In-browser client throughput speed testing and client-side VPN leak verification.",
+            "Complete dashboard redesign: clean, tactile, human-crafted aesthetic with friendly everyday language (no AI neon cyber glows)."
+        ]
+    },
+    {
+        "version": "2.4.0",
+        "date": "2026-10-19",
+        "tag": "Stable",
+        "changes": [
+            "Added VPN Quality & Sentry module with live Surfshark, WireGuard, and OpenVPN tunnel verification.",
+            "Real-time tunnel jitter, multi-target latency, packet loss, and download throughput benchmarking.",
+            "Path MTU & Packet Fragmentation inspector to detect and fix VPN MTU black holes.",
+            "DNS leak detection and resolver response time audit for secure tunnel DNS.",
+            "1-Click VPN Remediations: Optimize VPN MTU (1420), Flush DNS/Routes, Restart Surfshark Service, and Cycle Virtual Adapter.",
+            "Actionable diagnostic insights explaining daily VPN fluctuations (server congestion, WireGuard vs OpenVPN, and MTU overhead)."
+        ]
+    },
+    {
         "version": "2.3.0",
         "date": "2026-10-04",
-        "tag": "Latest",
+        "tag": "Stable",
         "changes": [
             "Added 1-Click LAN SMB File Sharing (Port 445) exposure remediation & shield.",
             "Integrated Version Control manager with automated remote GitHub update check.",

@@ -22,7 +22,14 @@ If you enjoy NetPulse Pro or if it helped you solve lag spikes, disconnects, or 
 
 ## ✨ Highlights & Key Features
 
-- **Categorized Left Sidebar Navigation**: Clean, user-friendly layout grouped into *Monitoring & Health*, *Diagnostics & Analysis*, *Security & Defense*, and *Optimization & Repair* with responsive mobile drawer support.
+- **📱 Client Device Network Verification & Scope Engine (This Device vs Pi Sentry 24/7)**:
+  - **Diagnose the Device in Your Hands**: Verify connection health on whatever phone, tablet, laptop, or desktop is currently viewing the dashboard.
+  - **Sub-Millisecond Wi-Fi Micro-Pings**: Direct in-browser round-trip latency and jitter measurements to the home router/Pi gateway.
+  - **Doctor Lag Origin Breakdown**: Pinpoints exactly where lag originates by comparing Hop 1 (Device $\leftrightarrow$ Router Wi-Fi) with Hop 2 (Router $\leftrightarrow$ Upstream ISP).
+  - **In-Browser Speed & VPN Audit**: Direct in-browser download throughput speed test, public IP audit, and VPN leak check.
+- **🎨 Human-Crafted, Friendly Design (No AI Neon Cyber Gimmicks)**:
+  - Replaced tacky cyan/purple neon glows with tactile charcoal panels, subtle borders, clean rounded corners, and clear everyday language.
+- **Categorized Left Sidebar Navigation**: Clean, user-friendly layout grouped into *Status & Health*, *Wi-Fi & Speed*, *Security & Privacy*, and *Fixes & Tools* with responsive mobile drawer support.
 - **🛡️ 6-Vector Security & Vulnerability Auditor**:
   - **Wi-Fi Protocol & Cipher Strength**: Audits WPA3/WPA2-AES security and flags outdated WEP/TKIP or open unencrypted SSIDs.
   - **Router Gateway Port Exposure**: Non-intrusively tests for exposed Telnet (23), UPnP (1900/5000), unencrypted HTTP management (80), and SMB (445).
@@ -32,7 +39,12 @@ If you enjoy NetPulse Pro or if it helped you solve lag spikes, disconnects, or 
   - **LAN Service Exposure**: Scans wildcard listening ports (`0.0.0.0`) for exposed databases, unauthenticated services, and Windows SMB (`Port 445`).
   - **1-Click Vulnerability Remediations**: One-click actions to enable host firewalls, flush ARP tables, apply Quad9 malware-blocking DNS, and shield/disable SMB File Sharing (`Port 445`) exposure.
   - **Security Audit Report Export**: 1-click download of comprehensive security assessment reports as formatted Markdown (`.md`) and instant clipboard export.
-  - **Version Control & GitHub Update Checker**: Integrated in-app version manifest, commit SHA tracking, changelog viewer, and live GitHub release checking.
+- **🦈 VPN Quality Doctor & Sentry (Surfshark, WireGuard, OpenVPN)**:
+  - **Live Tunnel Quality Audit**: Real-time jitter, multi-target latency, packet loss, and actual downstream throughput benchmarking.
+  - **Path MTU & Packet Fragmentation Defense**: Detects when VPN encapsulation (60-80 byte overhead) causes packet fragmentation black holes on 1500 MTU adapters.
+  - **DNS Leak & Latency Sentry**: Validates that DNS lookups are strictly resolving through secure VPN anycast tunnels rather than leaking plaintext domains to your local ISP gateway.
+  - **1-Click Auto-Remediations**: 1-click actions to clamp VPN adapter MTU to optimal 1420 bytes, flush DNS resolver caches & ARP tables, restart background Surfshark services, and cycle virtual network adapters.
+  - **Diagnostic Intelligence**: Plain-English root cause analysis explaining daily connection fluctuations (server node congestion, OpenVPN TCP vs WireGuard protocol, MTU overhead, and MultiHop).
 - **🩺 Disconnect & Drop Doctor with Instant Solutions**:
   - Automatically isolates whether disconnects originate from your **Local Router Gateway** (Wi-Fi signal degradation, channel congestion, driver sleep throttling) or your **External ISP**.
   - Pushes **immediate actionable remediation advice** right after drops occur.

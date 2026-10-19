@@ -1,9 +1,10 @@
 import os
 import sys
+import time
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
@@ -32,6 +33,15 @@ from .monitor import monitor_daemon
 from .cache import system_cache, cached
 from .bandwidth import bandwidth_tracker
 from .security_audit import run_full_security_audit, enable_host_firewall, disable_smb_file_sharing, enable_smb_file_sharing
+from .vpn_monitor import (
+    get_vpn_live_status,
+    run_comprehensive_vpn_quality_diagnostic,
+    optimize_vpn_mtu,
+    flush_vpn_dns_routes,
+    restart_vpn_service,
+    cycle_vpn_adapter,
+    run_full_vpn_tuneup
+)
 from .version import get_full_version_manifest, check_remote_updates, CURRENT_VERSION
 
 app = FastAPI(title="NetPulse Pro - WiFi & Network Diagnostic Studio", version=CURRENT_VERSION)
@@ -65,6 +75,37 @@ class SettingsUpdateRequest(BaseModel):
 
 class SingleWebhookTestRequest(BaseModel):
     webhook_url: str
+
+@app.get("/api/client-ping")
+def client_ping(request: Request):
+    """Ultra-low latency micro-ping endpoint for client device LAN round-trip testing."""
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    ua = request.headers.get("user-agent", "")
+    return {
+        "ok": True,
+        "t": time.time(),
+        "client_ip": client_ip,
+        "user_agent": ua
+    }
+
+@app.get("/api/client-speed-sample")
+def client_speed_sample(size_mb: int = 5):
+    """Serve binary payload for in-browser client Wi-Fi throughput testing."""
+    size_mb = max(1, min(size_mb, 20))
+    chunk = b"\x00" * (1024 * 64)  # 64KB chunks
+    total_bytes = size_mb * 1024 * 1024
+
+    def generate():
+        sent = 0
+        while sent < total_bytes:
+            yield chunk
+            sent += len(chunk)
+
+    return StreamingResponse(
+        generate(),
+        media_type="application/octet-stream",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate"}
+    )
 
 @app.get("/api/history")
 def get_history(hours: int = 1):
@@ -359,6 +400,41 @@ def check_updates_now():
     Check GitHub repository for newer releases and updates.
     """
     return check_remote_updates(force=True)
+
+@app.get("/api/vpn/status")
+def get_vpn_status():
+    """Get live VPN detection, adapter, process/service, and egress IP info."""
+    return get_vpn_live_status()
+
+@app.get("/api/vpn/quality")
+def get_vpn_quality(speed_test: bool = True):
+    """
+    Run comprehensive VPN quality diagnostic:
+    Latency, jitter, packet loss, MTU packet fragmentation, DNS leaks, and speed test.
+    """
+    return run_comprehensive_vpn_quality_diagnostic(run_speed_test=speed_test)
+
+@app.post("/api/vpn/fix/{action}")
+def run_vpn_fix_action(action: str):
+    """
+    1-Click VPN Remediation Actions:
+    optimize_mtu, flush_dns_routes, restart_service, cycle_adapter, full_tuneup.
+    """
+    act = action.lower().strip()
+    system_cache.clear()
+
+    if act == "optimize_mtu":
+        return optimize_vpn_mtu(1420)
+    elif act == "flush_dns_routes":
+        return flush_vpn_dns_routes()
+    elif act == "restart_service":
+        return restart_vpn_service("Surfshark Service")
+    elif act == "cycle_adapter":
+        return cycle_vpn_adapter()
+    elif act == "full_tuneup":
+        return run_full_vpn_tuneup()
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown VPN fix action: {action}")
 
 # Serve Frontend static assets
 if FRONTEND_DIR.exists():

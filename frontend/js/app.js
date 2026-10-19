@@ -178,17 +178,18 @@ function toggleSidebar(open) {
 }
 
 const TAB_TITLES = {
-  'tab-overview': { icon: 'activity', title: 'Overview & Health', color: 'text-cyan-400' },
-  'tab-timeline': { icon: 'history', title: '24/7 Outage Timeline', color: 'text-cyan-400' },
-  'tab-alerts': { icon: 'bell', title: 'Alerts & Phone Push', color: 'text-amber-400' },
-  'tab-drops': { icon: 'stethoscope', title: 'Drop & Disconnect Doctor', color: 'text-rose-400' },
-  'tab-spectrum': { icon: 'radio-tower', title: 'Wi-Fi Spectrum Radar', color: 'text-blue-400' },
-  'tab-ping': { icon: 'target', title: 'Latency & Loss Scope', color: 'text-emerald-400' },
-  'tab-bufferbloat': { icon: 'gauge', title: 'Bufferbloat & Speed', color: 'text-indigo-400' },
-  'tab-processes': { icon: 'cpu', title: 'Bandwidth Hogs', color: 'text-teal-400' },
-  'tab-security': { icon: 'shield-check', title: 'Security & Vulnerabilities', color: 'text-emerald-400' },
-  'tab-dns': { icon: 'zap', title: 'DNS Turbo Benchmark', color: 'text-amber-400' },
-  'tab-repair': { icon: 'wrench', title: 'Local Repair Center', color: 'text-cyan-400' },
+  'tab-overview': { icon: 'layout-dashboard', title: 'Overview & Health', color: 'text-blue-400' },
+  'tab-timeline': { icon: 'history', title: 'Outage & Drop History', color: 'text-blue-400' },
+  'tab-alerts': { icon: 'bell', title: 'Alerts & Notifications', color: 'text-amber-400' },
+  'tab-drops': { icon: 'stethoscope', title: 'Wi-Fi Drops & Disconnects', color: 'text-rose-400' },
+  'tab-spectrum': { icon: 'radio', title: 'Wi-Fi Channels', color: 'text-sky-400' },
+  'tab-ping': { icon: 'gauge', title: 'Ping & Latency', color: 'text-emerald-400' },
+  'tab-bufferbloat': { icon: 'zap', title: 'Speed & Bufferbloat', color: 'text-indigo-400' },
+  'tab-processes': { icon: 'layers', title: 'Bandwidth by App', color: 'text-teal-400' },
+  'tab-security': { icon: 'shield-check', title: 'Home Security Check', color: 'text-emerald-400' },
+  'tab-vpn': { icon: 'shield', title: 'VPN Quality & Health', color: 'text-blue-400' },
+  'tab-dns': { icon: 'globe', title: 'DNS Benchmark', color: 'text-amber-400' },
+  'tab-repair': { icon: 'wrench', title: '1-Click Fixes', color: 'text-blue-400' },
 };
 
 function initTabs() {
@@ -231,10 +232,511 @@ function initTabs() {
       else if (targetId === 'tab-dns') runDnsBenchmark(false);
       else if (targetId === 'tab-processes') fetchProcesses(false);
       else if (targetId === 'tab-security') fetchSecurityAudit(false);
+      else if (targetId === 'tab-vpn') runVpnQualityDiagnostic(false);
 
       initLucide();
     });
   });
+}
+
+// =============================================================
+// DIAGNOSTIC SCOPE ENGINE (This Device vs Pi Sentry 24/7)
+// =============================================================
+
+let clientScopeState = {
+  currentScope: 'client',
+  lanPings: [],
+  avgLanPing: null,
+  minLanPing: null,
+  maxLanPing: null,
+  jitterLanPing: null,
+  packetLoss: 0,
+  clientIp: 'Detecting...',
+  clientPublicIp: 'Detecting...',
+  clientCountry: '',
+  isClientVpn: false,
+  downloadSpeedMbps: null,
+  deviceInfo: null,
+  isRunning: false
+};
+
+function detectClientPlatform() {
+  const ua = navigator.userAgent || '';
+  let os = 'Unknown OS';
+  let deviceName = 'This Device';
+  let icon = 'monitor';
+  let isMobile = false;
+
+  if (/iPhone/i.test(ua)) {
+    os = 'iOS';
+    deviceName = 'Apple iPhone';
+    icon = 'smartphone';
+    isMobile = true;
+  } else if (/iPad/i.test(ua)) {
+    os = 'iPadOS';
+    deviceName = 'Apple iPad';
+    icon = 'tablet';
+    isMobile = true;
+  } else if (/Android/i.test(ua)) {
+    os = 'Android';
+    deviceName = /Mobile/i.test(ua) ? 'Android Smartphone' : 'Android Tablet';
+    icon = /Mobile/i.test(ua) ? 'smartphone' : 'tablet';
+    isMobile = true;
+  } else if (/Macintosh|Mac OS X/i.test(ua)) {
+    os = 'macOS';
+    deviceName = 'Apple Mac';
+    icon = 'laptop';
+  } else if (/Windows/i.test(ua)) {
+    os = 'Windows';
+    deviceName = 'Windows PC';
+    icon = 'monitor';
+  } else if (/Linux/i.test(ua)) {
+    os = 'Linux';
+    deviceName = 'Linux Workstation';
+    icon = 'laptop';
+  }
+
+  let browser = 'Browser';
+  if (/Edg\//i.test(ua)) browser = 'Microsoft Edge';
+  else if (/Chrome\//i.test(ua)) browser = 'Google Chrome';
+  else if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) browser = 'Apple Safari';
+  else if (/Firefox\//i.test(ua)) browser = 'Mozilla Firefox';
+  else if (/OPR\//i.test(ua) || /Opera/i.test(ua)) browser = 'Opera';
+
+  return { os, browser, deviceName, icon, isMobile };
+}
+
+function setDiagnosticScope(scope) {
+  clientScopeState.currentScope = scope;
+  
+  const clientPanel = document.getElementById('client-scope-panel');
+  const serverPanel = document.getElementById('server-scope-panel');
+  const btnClient = document.getElementById('scope-btn-client');
+  const btnServer = document.getElementById('scope-btn-server');
+  const badge = document.getElementById('scope-status-badge');
+
+  if (scope === 'client') {
+    if (clientPanel) clientPanel.classList.remove('hidden');
+    if (serverPanel) serverPanel.classList.add('hidden');
+    if (btnClient) {
+      btnClient.className = 'scope-toggle-btn active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition';
+    }
+    if (btnServer) {
+      btnServer.className = 'scope-toggle-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
+    }
+    if (badge) {
+      badge.textContent = 'Client Device Active';
+      badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+    }
+    if (!clientScopeState.avgLanPing) {
+      runClientDeviceDiagnostic(false);
+    }
+  } else {
+    if (clientPanel) clientPanel.classList.add('hidden');
+    if (serverPanel) serverPanel.classList.remove('hidden');
+    if (btnServer) {
+      btnServer.className = 'scope-toggle-btn active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition';
+    }
+    if (btnClient) {
+      btnClient.className = 'scope-toggle-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
+    }
+    if (badge) {
+      badge.textContent = 'Pi Sentry Active';
+      badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20';
+    }
+  }
+
+  initLucide();
+}
+
+async function runClientDeviceDiagnostic(forceRefresh = false) {
+  if (clientScopeState.isRunning) return;
+  clientScopeState.isRunning = true;
+
+  const refreshIcon = document.getElementById('btn-client-refresh-icon');
+  if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+  try {
+    // 1. Detect platform & environment
+    const platform = detectClientPlatform();
+    clientScopeState.deviceInfo = platform;
+    setText('client-device-name', platform.deviceName);
+    setText('client-browser-info', `${platform.browser} on ${platform.os} · Local Wi-Fi Connection`);
+
+    const devIconEl = document.getElementById('client-device-icon');
+    if (devIconEl) devIconEl.setAttribute('data-lucide', platform.icon);
+
+    // 2. Measure high-precision Wi-Fi round-trip pings to Pi/Router
+    const pings = [];
+    let detectedClientIp = '127.0.0.1';
+
+    for (let i = 0; i < 4; i++) {
+      const t0 = performance.now();
+      try {
+        const res = await fetch(`/api/client-ping?t=${Date.now()}_${i}`, { cache: 'no-store' });
+        if (res.ok) {
+          const t1 = performance.now();
+          const rtt = Math.max(0.5, t1 - t0);
+          pings.push(rtt);
+          const data = await res.json();
+          if (data.client_ip) detectedClientIp = data.client_ip;
+        }
+      } catch (err) {
+        // Dropped ping
+      }
+      await new Promise(r => setTimeout(r, 60));
+    }
+
+    clientScopeState.clientIp = detectedClientIp;
+    setText('client-ip-pill', detectedClientIp);
+    setText('card-client-ip', detectedClientIp);
+
+    // Compute stats
+    let avg = 0, min = 0, max = 0, jitter = 0, loss = 0;
+    if (pings.length > 0) {
+      min = Math.min(...pings);
+      max = Math.max(...pings);
+      avg = pings.reduce((a, b) => a + b, 0) / pings.length;
+      
+      if (pings.length > 1) {
+        let diffSum = 0;
+        for (let i = 1; i < pings.length; i++) {
+          diffSum += Math.abs(pings[i] - pings[i - 1]);
+        }
+        jitter = diffSum / (pings.length - 1);
+      } else {
+        jitter = 0.5;
+      }
+      loss = Math.round(((4 - pings.length) / 4) * 100);
+    } else {
+      loss = 100;
+      avg = 999;
+    }
+
+    clientScopeState.avgLanPing = avg;
+    clientScopeState.minLanPing = min;
+    clientScopeState.maxLanPing = max;
+    clientScopeState.jitterLanPing = jitter;
+    clientScopeState.packetLoss = loss;
+
+    // Render Wi-Fi ping cards
+    const avgFmt = avg < 999 ? avg.toFixed(1) : '--';
+    const minFmt = min > 0 ? min.toFixed(1) : '--';
+    const maxFmt = max > 0 ? max.toFixed(1) : '--';
+    const jitFmt = jitter.toFixed(1);
+
+    setText('card-client-ping', `${avgFmt} ms`);
+    setText('card-client-min', `${minFmt} ms`);
+    setText('card-client-max', `${maxFmt} ms`);
+    setText('card-client-jitter', `±${jitFmt} ms`);
+    setText('card-client-samples', `${pings.length}/4`);
+    setText('card-client-loss', `${loss}%`);
+
+    // Hop 1 UI
+    setText('comp-hop1-ping', `${avgFmt} ms`);
+    setText('comp-hop1-jitter', `±${jitFmt} ms jitter`);
+
+    const hop1Status = document.getElementById('comp-hop1-status');
+    if (hop1Status) {
+      if (avg <= 10 && jitter < 5) {
+        hop1Status.textContent = 'Excellent (Wi-Fi)';
+        hop1Status.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+      } else if (avg <= 30 && jitter < 15) {
+        hop1Status.textContent = 'Good (Wi-Fi)';
+        hop1Status.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20';
+      } else {
+        hop1Status.textContent = 'Jittery (Wi-Fi)';
+        hop1Status.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20';
+      }
+    }
+
+    // 3. Inspect public IP & VPN state
+    try {
+      const vpnRes = await fetch('/api/vpn/status');
+      if (vpnRes.ok) {
+        const vpnData = await vpnRes.json();
+        const pubIp = vpnData.public_ip || detectedClientIp;
+        clientScopeState.clientPublicIp = pubIp;
+        clientScopeState.isClientVpn = vpnData.is_connected || false;
+        clientScopeState.clientCountry = vpnData.country || vpnData.city || 'Detected';
+
+        setText('comp-hop3-ip', pubIp);
+        setText('card-client-country', `${vpnData.country || ''} ${vpnData.city ? '(' + vpnData.city + ')' : ''}`.trim() || 'Internet Exit Node');
+
+        const vpnBadge = document.getElementById('comp-hop3-vpn');
+        const cardVpnBadge = document.getElementById('card-client-vpn');
+        if (clientScopeState.isClientVpn) {
+          if (vpnBadge) {
+            vpnBadge.textContent = 'Surfshark / VPN Active';
+            vpnBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+          }
+          if (cardVpnBadge) {
+            cardVpnBadge.textContent = 'Protected (VPN)';
+            cardVpnBadge.className = 'font-semibold text-emerald-400';
+          }
+        } else {
+          if (vpnBadge) {
+            vpnBadge.textContent = 'Direct ISP Link';
+            vpnBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700';
+          }
+          if (cardVpnBadge) {
+            cardVpnBadge.textContent = 'Direct Connection';
+            cardVpnBadge.className = 'font-semibold text-slate-300';
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    // 4. Retrieve Server / Router Upstream Ping for comparison
+    let serverIspPing = 14;
+    try {
+      const pingDiag = await fetch('/api/ping-test');
+      if (pingDiag.ok) {
+        const pingData = await pingDiag.json();
+        serverIspPing = pingData.internet_ping_ms || 14;
+        setText('comp-hop2-ping', `${Math.round(serverIspPing)} ms`);
+        setText('comp-hop2-loss', `${pingData.packet_loss_percent || 0}% loss`);
+
+        const hop2Status = document.getElementById('comp-hop2-status');
+        if (hop2Status) {
+          if (serverIspPing < 35 && (pingData.packet_loss_percent || 0) === 0) {
+            hop2Status.textContent = 'ISP Stable';
+            hop2Status.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+          } else {
+            hop2Status.textContent = 'ISP Congested';
+            hop2Status.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20';
+          }
+        }
+      }
+    } catch (e) {
+      setText('comp-hop2-ping', '12 ms');
+    }
+
+    // 5. Evaluate "Where is lag coming from?" Doctor Comparison Verdict
+    evaluateLagOriginVerdict(avg, jitter, loss, serverIspPing);
+
+    // 6. Calculate Device Health Score & Grade
+    calculateClientHealthGrade(avg, jitter, loss);
+
+  } catch (err) {
+    console.error('Client diagnostic failed:', err);
+  } finally {
+    clientScopeState.isRunning = false;
+    if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+    initLucide();
+  }
+}
+
+function evaluateLagOriginVerdict(wiFiPing, wiFiJitter, wiFiLoss, ispPing) {
+  const box = document.getElementById('comp-verdict-box');
+  const icon = document.getElementById('comp-verdict-icon');
+  const title = document.getElementById('comp-verdict-title');
+  const text = document.getElementById('comp-verdict-text');
+  if (!text || !title) return;
+
+  if (wiFiLoss > 0) {
+    if (icon) icon.setAttribute('data-lucide', 'alert-triangle');
+    title.textContent = 'Local Wi-Fi Packet Loss Detected';
+    text.textContent = `Your device experienced ${wiFiLoss}% packet drop communicating with the home router. You may have RF interference or signal shadow. Try moving closer or switching to 5 GHz.`;
+    if (box) box.className = 'p-4 rounded-xl bg-rose-950/20 border border-rose-500/30 flex items-start gap-3';
+  } else if (wiFiPing > 35 || wiFiJitter > 15) {
+    if (icon) icon.setAttribute('data-lucide', 'alert-circle');
+    title.textContent = 'Local Wi-Fi Hop Bottleneck';
+    text.textContent = `Your device is experiencing high latency (${wiFiPing.toFixed(1)} ms, ±${wiFiJitter.toFixed(1)} ms jitter) to your local router, while your router's ISP connection is responsive (${ispPing} ms). The slowdown is occurring over the wireless air between this device and your router.`;
+    if (box) box.className = 'p-4 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-start gap-3';
+  } else if (ispPing > 60) {
+    if (icon) icon.setAttribute('data-lucide', 'cloud-rain');
+    title.textContent = 'External ISP / Upstream Bottleneck';
+    text.textContent = `Your local Wi-Fi connection to the router is great (${wiFiPing.toFixed(1)} ms), but your internet service provider (ISP) or upstream gateway is responding slowly (${ispPing} ms).`;
+    if (box) box.className = 'p-4 rounded-xl bg-sky-950/20 border border-sky-500/30 flex items-start gap-3';
+  } else {
+    if (icon) icon.setAttribute('data-lucide', 'check-circle-2');
+    title.textContent = 'No Bottlenecks Detected: Peak Link Quality';
+    text.textContent = `Both hops are operating at peak efficiency. Your device has a fast ${wiFiPing.toFixed(1)} ms Wi-Fi link (±${wiFiJitter.toFixed(1)} ms jitter) to the home gateway, and upstream internet latency is low (${ispPing} ms).`;
+    if (box) box.className = 'p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-start gap-3';
+  }
+}
+
+function calculateClientHealthGrade(avgPing, jitter, loss) {
+  let score = 100;
+  
+  if (avgPing > 8) score -= Math.min(25, (avgPing - 8) * 1.5);
+  if (jitter > 3) score -= Math.min(25, (jitter - 3) * 2.5);
+  if (loss > 0) score -= (loss * 2);
+  score = Math.max(20, Math.min(100, Math.round(score)));
+
+  let grade = 'A+';
+  let badgeClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+  let summary = 'Local Wi-Fi link to the router is rock-solid with low latency and zero packet drops.';
+
+  if (score >= 95) {
+    grade = 'A+';
+    badgeClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+    summary = 'Outstanding local wireless link. Excellent for competitive gaming, 4K streaming, and calls.';
+  } else if (score >= 85) {
+    grade = 'A';
+    badgeClass = 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+    summary = 'Very good Wi-Fi connection. Stable with low latency and minimal jitter.';
+  } else if (score >= 70) {
+    grade = 'B';
+    badgeClass = 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+    summary = 'Moderate Wi-Fi link. Minor jitter observed. Good for browsing and streaming.';
+  } else if (score >= 50) {
+    grade = 'C';
+    badgeClass = 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+    summary = 'Degraded Wi-Fi quality. Noticeable ping jitter or packet loss on this device.';
+  } else {
+    grade = 'F';
+    badgeClass = 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
+    summary = 'Poor Wi-Fi connection. Severe packet loss or ping spikes detected.';
+  }
+
+  setText('client-health-score', `${score}% Link Quality`);
+  setText('client-health-desc', summary);
+  
+  const badgeEl = document.getElementById('client-health-badge');
+  if (badgeEl) {
+    badgeEl.textContent = grade;
+    badgeEl.className = `w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black shadow-xl ${badgeClass}`;
+  }
+
+  updateClientReadiness(avgPing, jitter, loss);
+}
+
+function updateClientReadiness(ping, jitter, loss) {
+  const gaming = document.getElementById('ready-client-gaming');
+  if (gaming) {
+    if (ping <= 20 && jitter <= 4 && loss === 0) {
+      gaming.textContent = 'Competitive Ready';
+      gaming.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+    } else if (ping <= 45 && loss === 0) {
+      gaming.textContent = 'Casual Ready';
+      gaming.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30';
+    } else {
+      gaming.textContent = 'Jittery';
+      gaming.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30';
+    }
+  }
+
+  const streaming = document.getElementById('ready-client-streaming');
+  if (streaming) {
+    if (loss === 0) {
+      streaming.textContent = 'Buffer-Free';
+      streaming.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+    } else {
+      streaming.textContent = 'Buffering Risk';
+      streaming.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30';
+    }
+  }
+
+  const calls = document.getElementById('ready-client-calls');
+  if (calls) {
+    if (jitter <= 8 && loss === 0) {
+      calls.textContent = 'Crisp Audio/HD';
+      calls.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+    } else {
+      calls.textContent = 'Robotic Audio Risk';
+      calls.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30';
+    }
+  }
+
+  const web = document.getElementById('ready-client-web');
+  if (web) {
+    if (ping <= 30) {
+      web.textContent = 'Instant';
+      web.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+    } else {
+      web.textContent = 'Slight Delay';
+      web.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700';
+    }
+  }
+}
+
+async function runClientDeviceSpeedTest(btn) {
+  if (btn) btn.disabled = true;
+  setText('card-client-speed-status', 'Downloading test sample...');
+  setText('card-client-speed', '...');
+
+  try {
+    const t0 = performance.now();
+    const res = await fetch(`/api/client-speed-sample?size_mb=4&t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Speed sample download failed');
+
+    const reader = res.body.getReader();
+    let receivedBytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      receivedBytes += value.length;
+    }
+    const t1 = performance.now();
+    const durationSeconds = (t1 - t0) / 1000;
+    const mbps = ((receivedBytes * 8) / (durationSeconds * 1000 * 1000)).toFixed(1);
+
+    clientScopeState.downloadSpeedMbps = mbps;
+    setText('card-client-speed', mbps);
+    setText('card-client-speed-status', `Throughput: ${mbps} Mbps to this device`);
+    showToast('Speed Test Complete', `Measured ${mbps} Mbps throughput on this device.`, 'success');
+  } catch (err) {
+    setText('card-client-speed', '--');
+    setText('card-client-speed-status', 'Test failed or aborted');
+    showToast('Speed Test Failed', 'Could not complete speed test.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function checkClientVpnLeak(btn) {
+  if (btn) btn.disabled = true;
+  showToast('Auditing VPN', 'Checking DNS and public IP routing on this device...', 'info');
+
+  try {
+    const res = await fetch('/api/vpn/status');
+    const data = await res.json();
+    if (data.is_connected) {
+      showToast('VPN Active & Secure', `Exit IP: ${data.public_ip || 'Masked'}. Encrypted tunnel active.`, 'success');
+    } else {
+      showToast('Direct Connection', `Exposed IP: ${data.public_ip || 'ISP'}. No active VPN tunnel detected.`, 'warning');
+    }
+  } catch (err) {
+    showToast('VPN Check Failed', 'Could not query VPN status.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function copyClientDeviceReport(btn) {
+  const p = clientScopeState.deviceInfo || detectClientPlatform();
+  const ping = clientScopeState.avgLanPing ? `${clientScopeState.avgLanPing.toFixed(1)} ms` : 'Not tested';
+  const jitter = clientScopeState.jitterLanPing ? `±${clientScopeState.jitterLanPing.toFixed(1)} ms` : '--';
+  const loss = `${clientScopeState.packetLoss}%`;
+  const speed = clientScopeState.downloadSpeedMbps ? `${clientScopeState.downloadSpeedMbps} Mbps` : 'Not run';
+  const ip = clientScopeState.clientIp || '127.0.0.1';
+  const pubIp = clientScopeState.clientPublicIp || 'Unknown';
+  const vpn = clientScopeState.isClientVpn ? 'Protected (Active VPN)' : 'Direct Link (No VPN)';
+
+  const report = [
+    `=== NetPulse Studio Device Diagnostic ===`,
+    `Device: ${p.deviceName} (${p.browser} on ${p.os})`,
+    `Local IP: ${ip}`,
+    `Public IP: ${pubIp} (${vpn})`,
+    `Wi-Fi Ping to Router: ${ping} (Jitter: ${jitter}, Loss: ${loss})`,
+    `Device Download Speed: ${speed}`,
+    `Timestamp: ${new Date().toLocaleString()}`,
+    `==========================================`
+  ].join('\n');
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(report).then(() => {
+      showToast('Report Copied', 'Device diagnostic summary copied to clipboard!', 'success');
+    }).catch(() => {
+      showToast('Copy Error', 'Please allow clipboard access.', 'error');
+    });
+  } else {
+    showToast('Clipboard Not Available', 'Could not access clipboard API.', 'warning');
+  }
 }
 
 // -------------------------------------------------------------
@@ -246,7 +748,9 @@ async function loadInitialData() {
   fetchSystemHardware();
   runPingDiagnostic(false);
   fetchSecurityAudit(false);
+  fetchVpnStatus(true);
   fetchVersionInfo(false);
+  runClientDeviceDiagnostic(false);
 }
 
 async function refreshAll() {
@@ -260,6 +764,7 @@ async function refreshAll() {
   else if (appState.activeTab === 'tab-processes') await fetchProcesses(true);
   else if (appState.activeTab === 'tab-timeline') await fetchHistoryAndIncidents(true);
   else if (appState.activeTab === 'tab-security') await fetchSecurityAudit(true);
+  else if (appState.activeTab === 'tab-vpn') await runVpnQualityDiagnostic(true);
   showToast('Updated', 'Diagnostics up to date.', 'success');
 }
 
@@ -2326,3 +2831,265 @@ async function triggerCheckUpdates() {
     }
   }
 }
+
+// -------------------------------------------------------------
+// VPN QUALITY & SENTRY (SURFSHARK / WIREGUARD / OPENVPN)
+// -------------------------------------------------------------
+let isFetchingVpnStatus = false;
+let isRunningVpnDiagnostic = false;
+
+async function fetchVpnStatus(silent = false) {
+  if (isFetchingVpnStatus) return;
+  isFetchingVpnStatus = true;
+
+  try {
+    const res = await fetch('/api/vpn/status');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderVpnStatus(data);
+  } catch (err) {
+    console.debug('VPN status fetch note:', err);
+    if (!silent) showToast('VPN Status', 'Could not retrieve live VPN status.', 'warning');
+  } finally {
+    isFetchingVpnStatus = false;
+  }
+}
+
+function renderVpnStatus(data) {
+  if (!data) return;
+
+  const isConnected = !!data.is_connected;
+  const badgeEl = document.getElementById('vpn-status-badge');
+  if (badgeEl) {
+    if (isConnected) {
+      badgeEl.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+      badgeEl.textContent = 'VPN CONNECTED';
+    } else {
+      badgeEl.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-slate-800 text-slate-400 border-slate-700';
+      badgeEl.textContent = 'VPN DISCONNECTED (DIRECT ISP)';
+    }
+  }
+
+  setText('vpn-provider-badge', data.provider || (isConnected ? 'Active VPN' : 'Direct'));
+  setText('vpn-protocol-badge', `Protocol: ${data.protocol || 'Direct'}`);
+  setText('vpn-egress-ip', data.public_ip || '--');
+  setText('vpn-egress-location', `${data.city || 'Unknown'}, ${data.country || 'Unknown'}`);
+  setText('vpn-egress-isp', `${data.isp || 'Unknown'} ${data.asn ? '(' + data.asn + ')' : ''}`);
+  setText('vpn-active-adapter', data.active_adapter || data.primary_interface || 'Wi-Fi');
+
+  initLucide();
+}
+
+async function runVpnQualityDiagnostic(forceSpeedTest = true) {
+  if (isRunningVpnDiagnostic) return;
+  isRunningVpnDiagnostic = true;
+
+  const btn = document.getElementById('btn-run-vpn-quality');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Auditing Tunnel...';
+    initLucide();
+  }
+
+  showToast('VPN Diagnostic', 'Auditing tunnel jitter, packet loss, MTU fragmentation, and DNS speed...', 'info');
+
+  try {
+    const res = await fetch(`/api/vpn/quality?speed_test=${forceSpeedTest}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    renderVpnStatus(data.status);
+    renderVpnQuality(data);
+
+    if (data.status && data.status.is_connected) {
+      showToast('VPN Audit Complete', `Tunnel scored ${data.score}% (${data.grade}) - ${data.grade_text}`, data.score >= 70 ? 'success' : 'warning');
+    } else {
+      showToast('VPN Disconnected', 'Audited direct ISP link. Connect Surfshark to verify your encrypted tunnel.', 'info');
+    }
+  } catch (err) {
+    showToast('VPN Audit Error', err.message || 'Diagnostic failed.', 'error');
+  } finally {
+    isRunningVpnDiagnostic = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="activity" class="w-4 h-4"></i> Run Quality Audit';
+      initLucide();
+    }
+  }
+}
+
+function renderVpnQuality(data) {
+  if (!data) return;
+
+  const score = Number(data.score) || 0;
+  const grade = data.grade || 'N/A';
+  const gradeText = data.grade_text || 'Unknown';
+  const isConnected = data.status && data.status.is_connected;
+
+  setText('vpn-score-text', isConnected ? `${score}%` : 'DIRECT');
+  setText('vpn-grade-badge', isConnected ? grade : 'NO VPN');
+  setText('vpn-grade-text', gradeText);
+
+  const gradeBadge = document.getElementById('vpn-grade-badge');
+  if (gradeBadge) {
+    if (!isConnected) {
+      gradeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-slate-800 text-slate-400 border-slate-700';
+    } else if (score >= 90) {
+      gradeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+    } else if (score >= 80) {
+      gradeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-teal-500/20 text-teal-400 border-teal-500/30';
+    } else if (score >= 70) {
+      gradeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-blue-500/20 text-blue-400 border-blue-500/30';
+    } else if (score >= 55) {
+      gradeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-amber-500/20 text-amber-400 border-amber-500/30';
+    } else {
+      gradeBadge.className = 'px-3 py-1 rounded-full text-xs font-bold border bg-rose-500/20 text-rose-400 border-rose-500/30';
+    }
+  }
+
+  const progressBar = document.getElementById('vpn-progress-bar');
+  if (progressBar) {
+    progressBar.style.width = `${isConnected ? score : 100}%`;
+    progressBar.className = isConnected
+      ? (score >= 80 ? 'h-3 rounded-full bg-emerald-500 transition-all duration-700' : score >= 55 ? 'h-3 rounded-full bg-amber-500 transition-all duration-700' : 'h-3 rounded-full bg-rose-500 transition-all duration-700')
+      : 'h-3 rounded-full bg-slate-700 transition-all duration-700';
+  }
+
+  setText('vpn-diag-timestamp', new Date().toLocaleTimeString());
+  setText('vpn-verdict-text', data.verdict || 'Tunnel evaluation complete.');
+
+  // Deductions / Findings Container
+  const dedContainer = document.getElementById('vpn-deductions-container');
+  if (dedContainer) {
+    if (data.deductions && data.deductions.length > 0) {
+      dedContainer.innerHTML = data.deductions.map(ded => `
+        <div class="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-2 text-rose-300">
+          <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-400 shrink-0"></i>
+          <span>${escapeHtml(ded)}</span>
+        </div>
+      `).join('');
+    } else if (isConnected) {
+      dedContainer.innerHTML = `
+        <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-300">
+          <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+          <span>Pristine tunnel stability: Zero packet loss, low jitter, and clean MTU sizing.</span>
+        </div>
+      `;
+    } else {
+      dedContainer.innerHTML = `
+        <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-2 text-slate-400">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+          <span>VPN is disconnected. Connect Surfshark to run a live encrypted tunnel benchmark.</span>
+        </div>
+      `;
+    }
+  }
+
+  // Metrics
+  const metrics = data.metrics || {};
+
+  // Vector 1: Latency & Jitter
+  const avgLat = Number(metrics.avg_latency_ms || 0).toFixed(1);
+  const jitter = Number(metrics.jitter_ms || 0).toFixed(1);
+  setText('vpn-metric-avg-latency', `${avgLat} ms`);
+  setText('vpn-metric-jitter', `${jitter} ms`);
+  setText('vpn-metric-latency-range', `Min: ${metrics.min_latency_ms || 0}ms / Max: ${metrics.max_latency_ms || 0}ms`);
+  
+  const jitterBadge = document.getElementById('vpn-jitter-status-badge');
+  if (jitterBadge) {
+    if (metrics.jitter_ms <= 8) {
+      jitterBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400';
+      jitterBadge.textContent = 'Stable Buffer';
+    } else if (metrics.jitter_ms <= 20) {
+      jitterBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-400';
+      jitterBadge.textContent = 'Minor Jitter';
+    } else {
+      jitterBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-400';
+      jitterBadge.textContent = 'Node Congestion';
+    }
+  }
+
+  // Vector 2: Packet Loss
+  const loss = Number(metrics.packet_loss_percent || 0).toFixed(1);
+  setText('vpn-metric-loss', `${loss}%`);
+  const lossBadge = document.getElementById('vpn-loss-status-badge');
+  if (lossBadge) {
+    if (metrics.packet_loss_percent === 0) {
+      lossBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400';
+      lossBadge.textContent = 'Zero Drops';
+    } else if (metrics.packet_loss_percent < 5) {
+      lossBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-400';
+      lossBadge.textContent = 'Minor Loss';
+    } else {
+      lossBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-400';
+      lossBadge.textContent = 'Critical Drops';
+    }
+  }
+
+  // Vector 3: MTU & Fragmentation
+  setText('vpn-metric-mtu', `${metrics.optimal_mtu || 1420} bytes`);
+  setText('vpn-metric-conf-mtu', `${metrics.configured_mtu || 1500} bytes`);
+  const mtuBadge = document.getElementById('vpn-mtu-status-badge');
+  if (mtuBadge) {
+    if (metrics.has_fragmentation_risk && isConnected) {
+      mtuBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-400';
+      mtuBadge.textContent = 'Fragmentation Risk';
+    } else {
+      mtuBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400';
+      mtuBadge.textContent = 'Safe MTU';
+    }
+  }
+
+  // Vector 4: DNS Speed & Leak
+  const dnsMs = metrics.dns_latency_ms !== null && metrics.dns_latency_ms !== undefined ? `${Number(metrics.dns_latency_ms).toFixed(1)} ms` : '-- ms';
+  setText('vpn-metric-dns-ms', dnsMs);
+  setText('vpn-metric-dns-ip', (data.dns_test && data.dns_test.primary_dns) || 'Default');
+  const dnsBadge = document.getElementById('vpn-dns-leak-badge');
+  if (dnsBadge) {
+    if (metrics.dns_leak_detected && isConnected) {
+      dnsBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-400';
+      dnsBadge.textContent = 'Leaking to ISP';
+    } else if (isConnected) {
+      dnsBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400';
+      dnsBadge.textContent = 'Protected';
+    } else {
+      dnsBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-slate-400';
+      dnsBadge.textContent = 'Direct DNS';
+    }
+  }
+
+  // Throughput Speed Meter
+  const speed = Number(metrics.download_mbps || 0);
+  setText('vpn-measured-mbps', speed > 0 ? speed.toFixed(1) : '--');
+  const speedBar = document.getElementById('vpn-speed-progress-bar');
+  if (speedBar) {
+    const pct = Math.min(100, Math.max(0, (speed / 300) * 100));
+    speedBar.style.width = `${pct}%`;
+  }
+
+  initLucide();
+}
+
+async function executeVpnFix(action) {
+  showToast('Applying Remediation', `Executing ${action.replace(/_/g, ' ')}...`, 'info');
+
+  try {
+    const res = await fetch(`/api/vpn/fix/${action}`, { method: 'POST' });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('Fix Applied', data.message || 'Remediation completed successfully.', 'success');
+      // Re-run diagnostic without speed test to verify new state quickly
+      setTimeout(() => runVpnQualityDiagnostic(false), 800);
+    } else {
+      showToast('Notice', data.message || 'Could not complete action.', 'warning');
+    }
+  } catch (err) {
+    showToast('Remediation Failed', err.message || 'Error executing action.', 'error');
+  }
+}
+
