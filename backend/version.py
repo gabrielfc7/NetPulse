@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger("netpulse.version")
 
-CURRENT_VERSION = "2.5.1"
+CURRENT_VERSION = "2.5.2"
 APP_NAME = "NetPulse Pro"
 CHANNEL = "Stable Pro"
 RELEASE_DATE = "2026-10-19"
@@ -15,6 +15,16 @@ GITHUB_REPO = "gabrielfc7/NetPulse"
 GITHUB_URL = f"https://github.com/{GITHUB_REPO}"
 
 CHANGELOG = [
+    {
+        "version": "2.5.2",
+        "date": "2026-10-19",
+        "tag": "Latest",
+        "changes": [
+            "Fixed browser diagnostic hang with resilient fetch timeout and progressive UI rendering.",
+            "Eliminated client-ping backend latency by serving cached public IP non-blockingly.",
+            "Added DOM ready state bootstrap fallback and cache-busting asset query parameters."
+        ]
+    },
     {
         "version": "2.5.1",
         "date": "2026-10-19",

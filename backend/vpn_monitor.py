@@ -32,6 +32,16 @@ DATACENTER_ISP_KEYWORDS = [
 
 _public_ip_cache = {"ts": 0.0, "data": None}
 
+def get_cached_public_ip_info() -> Dict[str, Any]:
+    """Return cached public IP info immediately without blocking."""
+    global _public_ip_cache
+    if _public_ip_cache.get("data"):
+        return _public_ip_cache["data"]
+    # Trigger non-blocking background lookup
+    import threading
+    threading.Thread(target=get_public_ip_info, daemon=True).start()
+    return {}
+
 def get_public_ip_info(timeout: float = 3.5, force_refresh: bool = False) -> Dict[str, Any]:
     """
     Fetch public egress IP, ISP, Organization, City, Country, and ASN.

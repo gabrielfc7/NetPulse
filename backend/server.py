@@ -36,6 +36,7 @@ from .security_audit import run_full_security_audit, enable_host_firewall, disab
 from .vpn_monitor import (
     get_vpn_live_status,
     get_public_ip_info,
+    get_cached_public_ip_info,
     run_comprehensive_vpn_quality_diagnostic,
     optimize_vpn_mtu,
     flush_vpn_dns_routes,
@@ -82,7 +83,7 @@ def client_ping(request: Request):
     """Ultra-low latency micro-ping endpoint for client device LAN round-trip testing."""
     client_ip = request.client.host if request.client else "127.0.0.1"
     ua = request.headers.get("user-agent", "")
-    gw_info = get_public_ip_info(timeout=1.0)
+    gw_info = get_cached_public_ip_info()
     return {
         "ok": True,
         "t": time.time(),
@@ -96,7 +97,7 @@ def client_ping(request: Request):
 @app.get("/api/client-vpn-eval")
 def client_vpn_eval(ip: str = ""):
     """Evaluate whether a client IP belongs to a VPN/datacenter provider."""
-    gw_info = get_public_ip_info(timeout=1.0)
+    gw_info = get_cached_public_ip_info()
     gw_ip = gw_info.get("ip", "")
     is_diff = bool(ip and gw_ip and ip != gw_ip)
     return {
