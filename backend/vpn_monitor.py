@@ -30,11 +30,19 @@ DATACENTER_ISP_KEYWORDS = [
     "clouvider", "iptransit", "fastly", "cloudflare", "hosting", "vpn", "server"
 ]
 
-def get_public_ip_info(timeout: float = 3.5) -> Dict[str, Any]:
+_public_ip_cache = {"ts": 0.0, "data": None}
+
+def get_public_ip_info(timeout: float = 3.5, force_refresh: bool = False) -> Dict[str, Any]:
     """
     Fetch public egress IP, ISP, Organization, City, Country, and ASN.
+    Uses cached result (30s TTL) unless force_refresh is True.
     Uses ip-api.com with fallback to Cloudflare cdn-cgi/trace.
     """
+    global _public_ip_cache
+    now = time.time()
+    if not force_refresh and _public_ip_cache["data"] and (now - _public_ip_cache["ts"] < 30):
+        return _public_ip_cache["data"]
+
     try:
         req = urllib.request.Request(
             "http://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,isp,org,as,query",
@@ -51,7 +59,7 @@ def get_public_ip_info(timeout: float = 3.5) -> Dict[str, Any]:
                 combined = f"{isp} {org} {asn}".lower()
                 is_datacenter = any(kw in combined for kw in DATACENTER_ISP_KEYWORDS)
 
-                return {
+                res = {
                     "success": True,
                     "ip": data.get("query", "Unknown"),
                     "country": data.get("country", "Unknown"),
@@ -63,6 +71,8 @@ def get_public_ip_info(timeout: float = 3.5) -> Dict[str, Any]:
                     "asn": asn,
                     "is_datacenter_vpn": is_datacenter
                 }
+                _public_ip_cache = {"ts": now, "data": res}
+                return res
     except Exception as e:
         logger.debug(f"ip-api lookup failed: {e}")
 
@@ -84,7 +94,7 @@ def get_public_ip_info(timeout: float = 3.5) -> Dict[str, Any]:
             loc = info.get("loc", "Unknown")
             warp = info.get("warp", "off") == "on"
 
-            return {
+            res = {
                 "success": True,
                 "ip": ip,
                 "country": loc,
@@ -96,6 +106,8 @@ def get_public_ip_info(timeout: float = 3.5) -> Dict[str, Any]:
                 "asn": "",
                 "is_datacenter_vpn": warp
             }
+            _public_ip_cache = {"ts": now, "data": res}
+            return res
     except Exception as e:
         logger.debug(f"Cloudflare trace fallback failed: {e}")
 

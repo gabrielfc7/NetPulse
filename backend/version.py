@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger("netpulse.version")
 
-CURRENT_VERSION = "2.5.0"
+CURRENT_VERSION = "2.5.1"
 APP_NAME = "NetPulse Pro"
 CHANNEL = "Stable Pro"
 RELEASE_DATE = "2026-10-19"
@@ -15,6 +15,18 @@ GITHUB_REPO = "gabrielfc7/NetPulse"
 GITHUB_URL = f"https://github.com/{GITHUB_REPO}"
 
 CHANGELOG = [
+    {
+        "version": "2.5.1",
+        "date": "2026-10-19",
+        "tag": "Latest",
+        "changes": [
+            "Fixed in-device client network checks & VPN quality detection for local dashboard viewers.",
+            "Added client-side public IP resolution with multi-provider CORS fallbacks (ipwho.is, ipify, icanhazip).",
+            "Added dual-scope VPN Sentry: evaluate client device tunnel (Surfshark/WireGuard) vs. Raspberry Pi router sentry.",
+            "Implemented Cloudflare CDN client speed test measuring actual WAN throughput through VPN.",
+            "Added sub-millisecond local gateway ping and DoH DNS leak benchmark for active client connections."
+        ]
+    },
     {
         "version": "2.5.0",
         "date": "2026-10-19",

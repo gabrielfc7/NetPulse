@@ -35,6 +35,7 @@ from .bandwidth import bandwidth_tracker
 from .security_audit import run_full_security_audit, enable_host_firewall, disable_smb_file_sharing, enable_smb_file_sharing
 from .vpn_monitor import (
     get_vpn_live_status,
+    get_public_ip_info,
     run_comprehensive_vpn_quality_diagnostic,
     optimize_vpn_mtu,
     flush_vpn_dns_routes,
@@ -81,11 +82,28 @@ def client_ping(request: Request):
     """Ultra-low latency micro-ping endpoint for client device LAN round-trip testing."""
     client_ip = request.client.host if request.client else "127.0.0.1"
     ua = request.headers.get("user-agent", "")
+    gw_info = get_public_ip_info(timeout=1.0)
     return {
         "ok": True,
         "t": time.time(),
         "client_ip": client_ip,
-        "user_agent": ua
+        "user_agent": ua,
+        "gateway_public_ip": gw_info.get("ip", ""),
+        "gateway_isp": gw_info.get("isp", ""),
+        "gateway_country": gw_info.get("country", "")
+    }
+
+@app.get("/api/client-vpn-eval")
+def client_vpn_eval(ip: str = ""):
+    """Evaluate whether a client IP belongs to a VPN/datacenter provider."""
+    gw_info = get_public_ip_info(timeout=1.0)
+    gw_ip = gw_info.get("ip", "")
+    is_diff = bool(ip and gw_ip and ip != gw_ip)
+    return {
+        "client_ip": ip,
+        "gateway_ip": gw_ip,
+        "is_different_from_gateway": is_diff,
+        "gateway_isp": gw_info.get("isp", "")
     }
 
 @app.get("/api/client-speed-sample")

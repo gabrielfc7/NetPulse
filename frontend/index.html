@@ -59,7 +59,7 @@
                 Checking Privileges...
               </span>
               <button onclick="openVersionModal()" id="btn-version-badge" title="NetPulse Studio Version Control" class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold transition flex items-center gap-1 active:scale-95">
-                <span id="btn-version-badge-text">v2.5.0</span>
+                <span id="btn-version-badge-text">v2.5.1</span>
                 <i data-lucide="git-branch" class="w-2.5 h-2.5 text-blue-400"></i>
               </button>
             </div>
@@ -2096,13 +2096,28 @@
           </div>
 
           <div class="flex items-center gap-2.5 flex-wrap w-full lg:w-auto">
-            <button id="btn-run-vpn-quality" onclick="runVpnQualityDiagnostic(true)" class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition active:scale-95 shadow-lg shadow-cyan-500/20">
+            <button id="btn-run-vpn-quality" onclick="runVpnQualityDiagnostic(true)" class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition active:scale-95 shadow-lg shadow-blue-500/20">
               <i data-lucide="activity" class="w-4 h-4"></i> Run Quality Audit
             </button>
             <button onclick="executeVpnFix('full_tuneup')" class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition active:scale-95 shadow-lg shadow-emerald-500/20">
               <i data-lucide="zap" class="w-4 h-4"></i> 1-Click VPN Tune-Up
             </button>
           </div>
+        </div>
+
+        <!-- Target Scope (This Device vs Pi Sentry) -->
+        <div class="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
+            <button id="vpn-scope-btn-client" onclick="setVpnTabScope('client')" class="scope-toggle-btn active flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition">
+              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+              <span>This Device's VPN</span>
+            </button>
+            <button id="vpn-scope-btn-server" onclick="setVpnTabScope('server')" class="scope-toggle-btn flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">
+              <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i>
+              <span>Pi Gateway VPN</span>
+            </button>
+          </div>
+          <span class="text-[11px] text-slate-400">Verifying VPN tunnel on active target</span>
         </div>
 
         <!-- Egress & Location Bar -->
