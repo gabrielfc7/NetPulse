@@ -58,7 +58,8 @@ def clear_arp_cache() -> Dict[str, Any]:
 def renew_dhcp_lease() -> Dict[str, Any]:
     """Release and renew DHCP IP address lease across Windows and Linux."""
     if not IS_WINDOWS:
-        code, out, err = run_command("dhclient -r 2>/dev/null && dhclient 2>/dev/null || true")
+        cmd = "nmcli con up netplan-eth0 2>/dev/null || nmcli networking off && nmcli networking on 2>/dev/null || (dhclient -r 2>/dev/null && dhclient 2>/dev/null) || true"
+        code, out, err = run_command(cmd)
         return {
             "action": "renew_dhcp",
             "success": True,

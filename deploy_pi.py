@@ -13,6 +13,7 @@ FILES_TO_SYNC = [
     ("backend/vpn_monitor.py", "backend/vpn_monitor.py"),
     ("backend/server.py", "backend/server.py"),
     ("backend/version.py", "backend/version.py"),
+    ("backend/optimizer.py", "backend/optimizer.py"),
     ("frontend/index.html", "frontend/index.html"),
     ("frontend/css/style.css", "frontend/css/style.css"),
     ("frontend/js/app.js", "frontend/js/app.js"),
@@ -91,22 +92,16 @@ def deploy_to_pi(username, password, host="192.168.1.108"):
 
     # Restart NetPulse on Pi
     print("[*] Restarting NetPulse service on Raspberry Pi...")
-    # 1. Try systemctl
-    client.exec_command(f"sudo systemctl restart netpulse 2>/dev/null || true")
+    # 1. Try systemctl with sudo
+    client.exec_command(f"echo '{password}' | sudo -S systemctl restart netpulse 2>/dev/null || true")
     
-    # 2. Check if netpulse is running via nohup/python
+    # 2. Check if netpulse is running via nohup/python as fallback
     stdin, stdout, stderr = client.exec_command("pgrep -f 'run.py' || pgrep -f 'backend.server'")
     pids = stdout.read().decode().strip().split()
     
-    if pids:
-        print(f"[*] Found running Python NetPulse PIDs: {pids}. Sending restart signal...")
-        client.exec_command(f"kill {' '.join(pids)} 2>/dev/null || true")
-        time.sleep(1.5)
-        # Re-launch
-        client.exec_command(f"cd '{remote_dir}' && nohup python3 run.py > netpulse.log 2>&1 &")
-    else:
+    if not pids:
         # Launch if not running
-        client.exec_command(f"cd '{remote_dir}' && nohup python3 run.py > netpulse.log 2>&1 &")
+        client.exec_command(f"cd '{remote_dir}' && nohup venv/bin/python run.py > netpulse.log 2>&1 &")
 
     print("[*] Waiting for NetPulse to initialize...")
     time.sleep(3)
@@ -125,7 +120,7 @@ def deploy_to_pi(username, password, host="192.168.1.108"):
     return True
 
 if __name__ == "__main__":
-    user = sys.argv[1] if len(sys.argv) > 1 else os.getenv("PI_USER", "gabs")
+    user = sys.argv[1] if len(sys.argv) > 1 else os.getenv("PI_USER", "gabriel")
     pwd = sys.argv[2] if len(sys.argv) > 2 else os.getenv("PI_PASSWORD")
     host = sys.argv[3] if len(sys.argv) > 3 else os.getenv("PI_HOST", "192.168.1.108")
 
