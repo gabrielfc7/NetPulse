@@ -40,9 +40,13 @@ log "Update detected! Local: ${LOCAL:0:7} -> Remote: ${REMOTE:0:7}"
 CHANGED_FILES=$(git diff --name-only "$LOCAL" "$REMOTE")
 
 log "Safely pulling latest changes from GitHub..."
-# Discard local modifications to tracked files to ensure clean fast-forward
-git reset --hard "$LOCAL" --quiet
-git pull --ff-only origin main
+# Remove any untracked files that are introduced in remote to prevent merge blocks
+for f in $CHANGED_FILES; do
+    if [ -f "$f" ] && ! git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+        rm -f "$f"
+    fi
+done
+git reset --hard origin/main
 
 NEW_HEAD=$(git rev-parse HEAD)
 log "Successfully updated repository to commit ${NEW_HEAD:0:7}"
