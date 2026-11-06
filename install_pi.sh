@@ -32,6 +32,13 @@ fi
 # Ensure data directory exists
 mkdir -p data
 
+# Stop native bare-metal systemd service if running to avoid port 8765 conflict
+if systemctl is-active --quiet netpulse 2>/dev/null; then
+    echo "[*] Stopping native netpulse service to free port 8765..."
+    sudo systemctl stop netpulse 2>/dev/null || true
+    sudo systemctl disable netpulse 2>/dev/null || true
+fi
+
 echo "[+] Building and starting NetPulse Pro Docker container..."
 docker compose down 2>/dev/null || true
 docker compose up -d --build

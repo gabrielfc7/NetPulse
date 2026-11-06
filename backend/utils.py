@@ -269,17 +269,50 @@ def get_active_wifi_interface() -> dict:
     dns_servers = ""
     mac_addr = ""
 
+    # Try default route interface first
+    try:
+        code, out, _ = run_command("ip -4 route show default", timeout=3)
+        if code == 0 and out:
+            m = re.search(r"dev\s+([^\s]+)", out)
+            if m:
+                iface_name = m.group(1).strip()
+    except Exception:
+        pass
+
     try:
         addrs = psutil.net_if_addrs()
-        # Find primary interface with IPv4
-        for name, addr_list in addrs.items():
-            if name != "lo":
+        # Prefer default route interface if present in psutil addresses
+        if iface_name in addrs:
+            for addr in addrs[iface_name]:
+                if addr.family == socket.AF_INET and not addr.address.startswith("127."):
+                    ip_addr = addr.address
+                elif getattr(addr, "family", None) == getattr(psutil, "AF_LINK", None):
+                    mac_addr = addr.address
+
+        # Fallback if IP was not obtained: scan physical interfaces, ignoring virtual/docker/bridge
+        if not ip_addr:
+            candidates = []
+            for name, addr_list in addrs.items():
+                lower = name.lower()
+                if any(ignored in lower for ignored in ["lo", "docker", "br-", "veth", "tailscale"]):
+                    continue
+                candidates.append((name, addr_list))
+
+            # Prioritize eth/en, then wl/wlan
+            candidates.sort(key=lambda item: 0 if item[0].startswith(("eth", "en")) else (1 if item[0].startswith(("wl", "wlan")) else 2))
+
+            for name, addr_list in candidates:
                 for addr in addr_list:
                     if addr.family == socket.AF_INET and not addr.address.startswith("127."):
                         iface_name = name
                         ip_addr = addr.address
-                    elif getattr(addr, "family", None) == getattr(psutil, "AF_LINK", None):
-                        mac_addr = addr.address
+                        break
+                if ip_addr:
+                    for addr in addr_list:
+                        if getattr(addr, "family", None) == getattr(psutil, "AF_LINK", None):
+                            mac_addr = addr.address
+                            break
+                    break
     except Exception:
         pass
 

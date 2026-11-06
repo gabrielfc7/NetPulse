@@ -6,7 +6,7 @@ import urllib.request
 from pathlib import Path
 import paramiko
 
-PI_HOSTS = ["192.168.1.108", "192.168.1.107", "pi.local"]
+PI_HOSTS = ["192.168.1.107", "192.168.1.108", "pi.local"]
 PORT = 22
 
 FILES_TO_SYNC = [
@@ -20,7 +20,7 @@ FILES_TO_SYNC = [
     ("README.md", "README.md"),
 ]
 
-def check_live_api(host="192.168.1.108", port=8765):
+def check_live_api(host="192.168.1.107", port=8765):
     try:
         url = f"http://{host}:{port}/api/version"
         with urllib.request.urlopen(url, timeout=3) as resp:
@@ -29,7 +29,7 @@ def check_live_api(host="192.168.1.108", port=8765):
     except Exception:
         return None
 
-def deploy_to_pi(username, password, host="192.168.1.108"):
+def deploy_to_pi(username, password, host="192.168.1.107"):
     print(f"[*] Connecting to Raspberry Pi at {host}:22 as user '{username}'...")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -41,7 +41,8 @@ def deploy_to_pi(username, password, host="192.168.1.108"):
             username=username,
             password=password,
             timeout=8,
-            look_for_keys=True
+            look_for_keys=False,
+            allow_agent=False
         )
     except Exception as e:
         print(f"[!] SSH Connection failed: {e}")
@@ -122,7 +123,7 @@ def deploy_to_pi(username, password, host="192.168.1.108"):
 if __name__ == "__main__":
     user = sys.argv[1] if len(sys.argv) > 1 else os.getenv("PI_USER", "gabriel")
     pwd = sys.argv[2] if len(sys.argv) > 2 else os.getenv("PI_PASSWORD")
-    host = sys.argv[3] if len(sys.argv) > 3 else os.getenv("PI_HOST", "192.168.1.108")
+    host = sys.argv[3] if len(sys.argv) > 3 else os.getenv("PI_HOST", "192.168.1.107")
 
     if not pwd and sys.stdin.isatty():
         import getpass

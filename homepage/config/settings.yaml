@@ -1,0 +1,12 @@
+title: Raspberry Pi 4 Sentry Hub
+theme: dark
+color: slate
+cardBlur: md
+headerStyle: clean
+layout:
+  Core Applications:
+    style: row
+    columns: 3
+  Network & Security:
+    style: row
+    columns: 2

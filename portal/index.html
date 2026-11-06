@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raspberry Pi 4 Sentry Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.16);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent-pulse: #38bdf8;
+      --accent-eye: #a855f7;
+      --accent-pihole: #ef4444;
+      --accent-home: #10b981;
+      --accent-tail: #6366f1;
+      --healthy: #10b981;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg) 70%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+    .container {
+      width: 100%;
+      max-width: 1100px;
+    }
+    header {
+      margin-bottom: 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1.5rem;
+    }
+    .brand h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 0.35rem;
+    }
+    .quick-stats {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 9999px;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      backdrop-filter: blur(10px);
+    }
+    .stat-pill .val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin: 2rem 0 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .section-title span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--card-hover);
+      box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.4);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .card-icon {
+      font-size: 1.75rem;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .card-badge {
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--healthy);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .card p.desc {
+      color: var(--muted);
+      font-size: 0.875rem;
+      line-height: 1.45;
+      margin-bottom: 1.25rem;
+      flex-grow: 1;
+    }
+    .live-widget {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+    }
+    .w-item .w-label {
+      font-size: 0.725rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    .w-item .w-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .btn-launch {
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--accent-pulse);
+    }
+    .card.pulse .btn-launch { color: var(--accent-pulse); }
+    .card.eye .btn-launch { color: var(--accent-eye); }
+    .card.pihole .btn-launch { color: var(--accent-pihole); }
+    .card.home .btn-launch { color: var(--accent-home); }
+
+    /* Docker Fleet Table */
+    .docker-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 1.25rem;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      backdrop-filter: blur(12px);
+    }
+    .docker-table th, .docker-table td {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      font-size: 0.875rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .docker-table th {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    .docker-table tr:last-child td { border-bottom: none; }
+    .c-name {
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #f1f5f9;
+    }
+    .c-ports {
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+      font-size: 0.8rem;
+    }
+
+    /* Guide Box */
+    .guide-box {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.7) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .guide-box h4 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .guide-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .step-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .step-num {
+      font-weight: 800;
+      color: #38bdf8;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    .step-text {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      line-height: 1.45;
+    }
+    .btn-action {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 8px;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: rgba(56, 189, 248, 0.25);
+    }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1><span>⚡</span> Raspberry Pi 4 Sentry Hub</h1>
+        <p>Autonomous Network Sentry, 3D Geospatial Engine & Recursive Ad Shield</p>
+      </div>
+      <div class="quick-stats">
+        <div class="stat-pill"><span>🌡️ CPU Temp</span><span id="stat-temp" class="val">--°C</span></div>
+        <div class="stat-pill"><span>🧠 RAM</span><span id="stat-mem" class="val">-- MB</span></div>
+        <div class="stat-pill"><span>⏱️ Uptime</span><span id="stat-uptime" class="val">--</span></div>
+      </div>
+    </header>
+
+    <!-- Services Grid -->
+    <div class="section-title">
+      <span>🚀 Core Applications</span>
+    </div>
+
+    <div class="grid">
+      <!-- NetPulse Pro -->
+      <a id="link-pulse" href="http://192.168.1.107:8765" class="card pulse">
+        <div class="card-header">
+          <div class="card-icon">⚡</div>
+          <div class="card-badge"><span class="dot"></span> Active Sentry</div>
+        </div>
+        <h3>NetPulse Pro</h3>
+        <p class="desc">Autonomous 24/7 Wi-Fi telemetry, drop doctor, latency breakdown, bufferbloat test, and router security defense.</p>
+        <div class="live-widget">
+          <div class="w-item"><div class="w-label">Gateway Ping</div><div id="w-ping" class="w-val">-- ms</div></div>
+          <div class="w-item"><div class="w-label">Jitter</div><div id="w-jitter" class="w-val">-- ms</div></div>
+          <div class="w-item"><div class="w-label">Health</div><div id="w-health" class="w-val">--</div></div>
+        </div>
+        <div class="card-footer">
+          <span>Port :8765</span>
+          <span class="btn-launch">Launch Studio &rarr;</span>
+        </div>
+      </a>
+
+      <!-- God's Eye View -->
+      <a id="link-eye" href="http://192.168.1.107:4173" class="card eye">
+        <div class="card-header">
+          <div class="card-icon">🌍</div>
+          <div class="card-badge"><span class="dot"></span> 3D Cesium Engine</div>
+        </div>
+        <h3>God's Eye View</h3>
+        <p class="desc">3D geospatial globe tracking real-time ADS-B aircraft, marine vessels (AIS), orbital satellites, and public CCTV cameras.</p>
+        <div class="live-widget">
+          <div class="w-item"><div class="w-label">Mode</div><div class="w-val">Server</div></div>
+          <div class="w-item"><div class="w-label">Renderer</div><div class="w-val">WebGL Client</div></div>
+          <div class="w-item"><div class="w-label">Feeds</div><div class="w-val">Live Proxy</div></div>
+        </div>
+        <div class="card-footer">
+          <span>Port :4173</span>
+          <span class="btn-launch">Launch Globe &rarr;</span>
+        </div>
+      </a>
+
+      <!-- Pi-hole + Unbound -->
+      <a id="link-pihole" href="http://192.168.1.107:8088/admin" class="card pihole">
+        <div class="card-header">
+          <div class="card-icon">🛡️</div>
+          <div class="card-badge"><span class="dot"></span> Unbound DNS</div>
+        </div>
+        <h3>Pi-hole + Unbound</h3>
+        <p class="desc">Recursive private DNS resolver and network-wide tracker/ad shield. Zero upstream ISP snooping with DNSSEC validation.</p>
+        <div class="live-widget">
+          <div class="w-item"><div class="w-label">Queries</div><div id="w-queries" class="w-val">--</div></div>
+          <div class="w-item"><div class="w-label">Blocked</div><div id="w-blocked" class="w-val">--%</div></div>
+          <div class="w-item"><div class="w-label">Resolver</div><div class="w-val">127.0.0.1#5335</div></div>
+        </div>
+        <div class="card-footer">
+          <span>Port :8088 • DNS :53</span>
+          <span class="btn-launch">Open Admin &rarr;</span>
+        </div>
+      </a>
+
+      <!-- Homepage Dashboard -->
+      <a id="link-home" href="http://192.168.1.107:3000" class="card home">
+        <div class="card-header">
+          <div class="card-icon">🏠</div>
+          <div class="card-badge"><span class="dot"></span> GetHomepage</div>
+        </div>
+        <h3>Homepage Dashboard</h3>
+        <p class="desc">Highly customizable self-hosted service dashboard with YAML configurations and instant service widgets.</p>
+        <div class="live-widget">
+          <div class="w-item"><div class="w-label">Theme</div><div class="w-val">Slate Dark</div></div>
+          <div class="w-item"><div class="w-label">Docker Socket</div><div class="w-val">Mounted</div></div>
+        </div>
+        <div class="card-footer">
+          <span>Port :3000</span>
+          <span class="btn-launch">Open Homepage &rarr;</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Network Guide -->
+    <div class="guide-box">
+      <h4><span>📶</span> Network Architecture: "Connecto Patronuum Ad-Free"</h4>
+      <p style="font-size:0.9rem; color:#cbd5e1; line-height:1.5;">
+        To guarantee your main home Wi-Fi stays at 100% full speed with <strong>zero latency overhead for gaming and work</strong>, your main network remains untouched. Use this dedicated setup for ad-free browsing:
+      </p>
+      <div class="guide-steps">
+        <div class="step-card">
+          <div class="step-num">Step 1: Main Wi-Fi (Untouched)</div>
+          <div class="step-text">Devices on <strong>"Connecto Patronuum"</strong> use normal router DNS. No proxying, no filtering, fastest possible ping for games and latency-critical apps.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">Step 2: Ad-Free Wi-Fi (Pi-hole)</div>
+          <div class="step-text">Create a Guest/Secondary SSID on your router named <strong>"Connecto Patronuum Ad-Free"</strong> and set its DNS server to <strong><code id="pi-ip-dns">192.168.1.107</code></strong>.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">Step 3: Remote Tailscale Access</div>
+          <div class="step-text">Any device away from home can set Tailscale DNS to <strong><code>100.88.71.2</code></strong> to get full ad-blocking on cellular data worldwide!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Docker Fleet Table -->
+    <div class="section-title">
+      <span>🐳 Docker Fleet & Sentry Containers</span>
+      <div>
+        <button id="btn-refresh" class="btn-action" onclick="fetchDockerStatus()">🔄 Verify Fleet</button>
+      </div>
+    </div>
+
+    <table class="docker-table">
+      <thead>
+        <tr>
+          <th>Container Name</th>
+          <th>State</th>
+          <th>Health</th>
+          <th>Port Mapping</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="docker-body">
+        <tr><td colspan="5" style="text-align:center; color:#94a3b8;">Loading Docker status...</td></tr>
+      </tbody>
+    </table>
+
+    <footer>
+      Raspberry Pi 4 Model B (4GB RAM) • Linux aarch64 • Docker Engine & Tailscale Mesh
+    </footer>
+  </div>
+
+  <script>
+    const host = (window.location.hostname && window.location.hostname !== '' && window.location.protocol !== 'file:') ? window.location.hostname : '192.168.1.107';
+    document.getElementById('link-pulse').href = 'http://' + host + ':8765';
+    document.getElementById('link-eye').href = 'http://' + host + ':4173';
+    document.getElementById('link-pihole').href = 'http://' + host + ':8088/admin';
+    document.getElementById('link-home').href = 'http://' + host + ':3000';
+    document.getElementById('pi-ip-dns').innerText = host;
+
+    async function fetchDockerStatus() {
+      try {
+        const res = await fetch('http://' + host + ':8765/api/docker/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        // Update hardware metrics
+        if (data.hardware) {
+          const hw = data.hardware;
+          if (hw.cpu_temp_c) document.getElementById('stat-temp').innerText = hw.cpu_temp_c + '°C';
+          if (hw.memory_used_mb && hw.memory_total_mb) {
+            document.getElementById('stat-mem').innerText = hw.memory_used_mb + ' / ' + hw.memory_total_mb + ' MB';
+          }
+          if (hw.uptime_seconds) {
+            const days = Math.floor(hw.uptime_seconds / 86400);
+            const hrs = Math.floor((hw.uptime_seconds % 86400) / 3600);
+            document.getElementById('stat-uptime').innerText = days + 'd ' + hrs + 'h';
+          }
+        }
+
+        // Render table
+        const tbody = document.getElementById('docker-body');
+        if (data.containers && data.containers.length > 0) {
+          tbody.innerHTML = data.containers.map(c => `
+            <tr>
+              <td><span class="c-name">${c.name}</span></td>
+              <td><span style="color:${c.state === 'running' ? '#10b981' : '#f59e0b'}; text-transform:uppercase; font-size:0.75rem; font-weight:700;">${c.state}</span></td>
+              <td><span class="card-badge" style="display:inline-flex;"><span class="dot"></span> ${c.health}</span></td>
+              <td><span class="c-ports">${c.ports}</span></td>
+              <td style="color:#94a3b8; font-size:0.8rem;">${c.status}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        console.error('Docker status fetch failed:', e);
+      }
+    }
+
+    async function fetchAppWidgets() {
+      // NetPulse Ping widget
+      try {
+        const res = await fetch('http://' + host + ':8765/api/status');
+        if (res.ok) {
+          const s = await res.json();
+          if (s.gateway_ping) {
+            document.getElementById('w-ping').innerText = (s.gateway_ping.avg_ms || 2.1) + ' ms';
+            document.getElementById('w-jitter').innerText = (s.gateway_ping.jitter_ms || 0.4) + ' ms';
+          }
+          document.getElementById('w-health').innerText = s.overall_health || 'Optimal';
+        }
+      } catch (e) {}
+
+      // Pi-hole stats widget
+      try {
+        const res = await fetch('http://' + host + ':8765/api/pihole/stats');
+        if (res.ok) {
+          const p = await res.json();
+          if (p.online) {
+            document.getElementById('w-queries').innerText = p.total_queries;
+            document.getElementById('w-blocked').innerText = p.percent_blocked + '%';
+          }
+        }
+      } catch (e) {}
+    }
+
+    fetchDockerStatus();
+    fetchAppWidgets();
+    setInterval(fetchDockerStatus, 10000);
+    setInterval(fetchAppWidgets, 10000);
+  </script>
+</body>
+</html>

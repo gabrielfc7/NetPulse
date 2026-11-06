@@ -455,6 +455,24 @@ def run_vpn_fix_action(action: str):
     else:
         raise HTTPException(status_code=400, detail=f"Unknown VPN fix action: {action}")
 
+from .docker_monitor import get_containers_summary, get_pihole_quick_stats
+
+@app.get("/api/docker/status")
+def get_docker_status():
+    """Get live status, health, and port mappings of all Docker containers on Raspberry Pi."""
+    containers = get_containers_summary()
+    hw = get_system_hardware_info()
+    return {
+        "status": "ok",
+        "containers": containers,
+        "hardware": hw
+    }
+
+@app.get("/api/pihole/stats")
+def get_pihole_stats():
+    """Get real-time ad-blocking metrics from Pi-hole + Unbound."""
+    return get_pihole_quick_stats()
+
 # Serve Frontend static assets
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")

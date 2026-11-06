@@ -1,5 +1,5 @@
 # Multi-Arch Dockerfile for NetPulse Pro (Raspberry Pi 4 ARM64 / AMD64)
-FROM python:3.10-slim-bullseye
+FROM python:3.11-slim-bookworm
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -13,7 +13,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     iputils-ping \
     iproute2 \
-    dnsutils \
+    bind9-dnsutils \
     procps \
     wireless-tools \
     curl \

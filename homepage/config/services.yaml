@@ -1,0 +1,83 @@
+- Sentry Recon & Applications:
+    - NetPulse Pro:
+        icon: mdi-wifi-check
+        href: "http://192.168.1.107:8765"
+        description: "24/7 RF Sentry • Automated Channel Optimizer & Wi-Fi Telemetry"
+        server: my-docker
+        container: netpulse-sentry
+        showStats: true
+        widget:
+          type: customapi
+          url: "http://192.168.1.107:8765/api/status"
+          mappings:
+            - field: wifi.signal_rating
+              label: Signal Link
+              format: text
+            - field: wifi.rx_rate_mbps
+              label: Speed
+              suffix: " Mbps"
+            - field: wifi.default_gateway
+              label: Gateway
+              format: text
+
+    - God's Eye View:
+        icon: mdi-earth
+        href: "http://192.168.1.107:4173"
+        description: "3D CesiumJS Geospatial Sentry • Satellites, Aircraft ADS-B & Maritime AIS"
+        server: my-docker
+        container: gods-eye-view-gods-eye-view-1
+        showStats: true
+
+    - Pi-hole + Unbound:
+        icon: pi-hole.png
+        href: "http://192.168.1.107:8088/admin"
+        description: "Recursive Unbound Root DNS • 516k+ Domain Privacy Shield"
+        server: my-docker
+        container: pihole-unbound
+        showStats: true
+        widget:
+          type: pihole
+          url: "http://pihole-unbound:80"
+          version: 6
+          key: "admin"
+          fields: ["queries", "blocked", "blocked_percent", "gravity"]
+
+- Fleet Operations & Control:
+    - Portainer CE:
+        icon: portainer.png
+        href: "http://192.168.1.107:9000"
+        description: "Container Fleet Control GUI • Stacks, Volumes, Logs & Terminal Access"
+        server: my-docker
+        container: portainer
+        showStats: true
+
+    - Watchtower Auto-Updater:
+        icon: watchtower.png
+        description: "Automated Daily 4:00 AM Container Image Updater • Safe Rolling Rebuilds"
+        server: my-docker
+        container: watchtower
+        showStats: true
+
+    - Sentry Command Hub:
+        icon: mdi-view-dashboard
+        href: "http://192.168.1.107:3000"
+        description: "Unified Sentry Portal • Reverse Proxy & Real-time Daemon Control"
+        server: my-docker
+        container: homepage
+        showStats: true
+
+- Network Defense & Hardware:
+    - Connecto Patronum Ad-Free:
+        icon: mdi-shield-check
+        href: "http://192.168.0.1"
+        description: "Archer_20 Isolated Wi-Fi AP (192.168.0.1) • Zero Main-Net Latency"
+
+    - AT&T Fiber Gateway:
+        icon: mdi-router-wireless
+        href: "http://192.168.1.254"
+        description: "Main Upstream BGW210 Gateway (192.168.1.254) • Direct Fiber ONT Link"
+
+    - Tailscale Mesh VPN:
+        icon: tailscale.png
+        href: "https://pi.tail349a26.ts.net"
+        description: "Encrypted Zero-Trust WireGuard Tunnel (100.88.71.2) • Port 80 SSL"
