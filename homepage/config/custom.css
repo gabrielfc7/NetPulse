@@ -1,0 +1,202 @@
+/* ==============================================================
+   TRUE OLED BLACK // MULTI-THEME NEON HUD (PIXELS OFF AESTHETIC)
+   ============================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+:root {
+  --neon-primary: #c084fc;
+  --neon-secondary: #f43f5e;
+  --neon-cyan: #00f5ff;
+  --neon-emerald: #00ff88;
+  --neon-glow: rgba(192, 132, 252, 0.5);
+  --oled-black: #000000;
+  --card-bg: rgba(10, 10, 16, 0.94);
+  --card-border: rgba(255, 255, 255, 0.12);
+}
+
+/* Pure Pitch OLED Black on Body Only */
+html, body {
+  background: #000000 !important;
+  background-color: #000000 !important;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+  color: #f8fafc !important;
+}
+
+/* Make Next.js wrapper layers transparent so Neural Canvas is fully visible! */
+#__next, #page_wrapper, #inner_wrapper, main, .container {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Header Title */
+header {
+  position: relative;
+  z-index: 10;
+}
+
+header h1, header .title {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  background: linear-gradient(135deg, #ffffff 0%, var(--neon-primary) 50%, var(--neon-secondary) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 0 25px var(--neon-glow) !important;
+}
+
+/* Category & Section Titles */
+.services-group-title, .bookmarks-group-title {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: #e2e8f0 !important;
+  margin-bottom: 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  position: relative;
+  z-index: 10;
+}
+
+.services-group-title::before {
+  content: "⚡";
+  margin-right: 8px;
+  color: var(--neon-primary);
+  filter: drop-shadow(0 0 6px var(--neon-primary));
+}
+.bookmarks-group-title::before {
+  content: "🚀";
+  margin-right: 8px;
+  color: var(--neon-cyan);
+  filter: drop-shadow(0 0 6px var(--neon-cyan));
+}
+
+/* Theme Switcher Capsule Bar */
+.theme-picker-pill {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.theme-picker-pill:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px currentColor;
+}
+.theme-picker-pill.active {
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 16px currentColor;
+}
+
+/* HUD Live Telemetry Cards */
+.hud-card {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95), 0 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  z-index: 10 !important;
+}
+
+.hud-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, var(--neon-primary) 0%, var(--neon-secondary) 100%);
+  opacity: 0.85;
+}
+
+.hud-card:hover {
+  transform: translateY(-3px) !important;
+  border-color: var(--neon-primary) !important;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.95), 0 0 25px var(--neon-glow) !important;
+}
+
+/* Service & Bookmark Cards */
+.service-card, .bookmark-card, .information-widget {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 18px !important;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  z-index: 10 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.9) !important;
+}
+
+.service-card::after, .bookmark-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-primary) 0%, var(--neon-secondary) 100%);
+  opacity: 0.45;
+  transition: opacity 0.25s ease, height 0.25s ease;
+}
+
+.service-card:hover, .bookmark-card:hover {
+  transform: translateY(-4px) scale(1.012) !important;
+  border-color: var(--neon-primary) !important;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.95), 0 0 22px var(--neon-glow) !important;
+}
+
+.service-card:hover::after, .bookmark-card:hover::after {
+  opacity: 1;
+  height: 2.5px;
+}
+
+.service-card img, .service-card svg {
+  filter: drop-shadow(0 0 6px var(--neon-glow));
+  transition: transform 0.25s ease;
+}
+.service-card:hover img, .service-card:hover svg {
+  transform: scale(1.08);
+}
+
+.service-status-dot.running, .status-dot.running {
+  background-color: var(--neon-emerald) !important;
+  box-shadow: 0 0 8px var(--neon-emerald), 0 0 14px var(--neon-emerald) !important;
+}
+
+.service-card-stat, .widget-stat, .information-widget span {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+input[type="search"], input[type="text"] {
+  background: rgba(14, 14, 20, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 14px !important;
+  color: #f1f5f9 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  position: relative;
+  z-index: 10;
+}
+input[type="search"]:focus, input[type="text"]:focus {
+  border-color: var(--neon-primary) !important;
+  box-shadow: 0 0 18px var(--neon-glow) !important;
+  outline: none !important;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-primary);
+}

@@ -1,0 +1,25 @@
+- Quick Launch Dock:
+    - Archer Router:
+        - icon: mdi-router-wireless
+          href: "http://192.168.1.162"
+          description: "Archer_20 Admin"
+    - AT&T Gateway:
+        - icon: mdi-router-network
+          href: "http://192.168.1.254"
+          description: "BGW320 Gateway"
+    - Pi-hole Admin:
+        - icon: pi-hole.png
+          href: "http://pi.local:8088/admin"
+          description: "Pi-hole Console"
+    - AdBlock Tester:
+        - icon: mdi-shield-search
+          href: "https://adblock-tester.com/"
+          description: "Live Adblock Benchmark"
+    - Tailscale Console:
+        - icon: tailscale.png
+          href: "https://login.tailscale.com/admin/machines"
+          description: "Tailnet Machines"
+    - Speedtest:
+        - icon: si-speedtest
+          href: "https://fast.com"
+          description: "Bandwidth Test"
